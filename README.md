@@ -1,37 +1,28 @@
-# SWIFTV2_DSS
-## Introduction
-The code within this repository consists of multiple firmware projects that implement and/or vet different functional requirements of the SWIFTV2 Digital Subsystems (DSS). SWIFTV2 is a design collaboration between Cornell University’s K. Lisa Yang Center for Conservation Bioacoustics and Analog Device’s Central Applications Group using ADI’s microcontroller, A2D, and other analog products to power Cornell’s second generation SWIFT autonomous recording units hardware/firmware platform.  This repository represents a good portion of Analog's firmware contribution to the project.
+# Magpie Firmware
 
-There are two Eclipse based programs and Two Matlab codes please find the description below
+## Brief
 
-SwiftV2_DSS:
+- This repository represents the firmware for the "Magpie" audio recorder project
+- Magpie is a hardware/software collaboration between Cornell University’s K. Lisa Yang Center for Conservation Bioacoustics and Analog Device’s Central Applications Group
+- It is a 2-channel Passive Acoustic Monitoring (PAM) device capable of recording high quality audio for long unsupervised durations
+- The intended use is the collection of bioacoustic data (natural sounds) for conservation research purposes
 
-This program is targeted towards MAX32666FTHR which talks to two other designs Mother board and Daughter Board. The Mother board houses power supplies, oscillators and AD4630 ADC where as the daughter board has all the Mics, OP-AMPS used for recording data. The code initiates SPI communication between MAX32666FTHR and AD4630 reading the recorded data from Mics. This data is simultaneously transferred to PC using USB on the FTHR. Please press SW1 on FTHR and start speaking (Blue LED is ON). We only have two seconds to hold the button. Donot hold it for long because it fills up the buffer completely. As soon as the SW1 is released the data is transferred to PC through USB (Red LED will be ON) Please check the board.c file in ${MSDKPath}\Libraries\Boards\MAX32665${BoardName}\Source path to learn switch and LED pins for specific board.
+## Features
 
-SwiftV2_DSS_Press_Start:
+- 2 high fidelity audio channels
+- Sample rates [24k, 48k, 96k, 192k, and 384k]
+- 24-bit or 16-bit recordings
+- Adjustable analog gain from 5dB to 40dB in 5dB steps
+- Bank of up to 6 SD cards for archiving audio data and logs
+- Accurate Real Time Clock keeps track of time for recording schedule
+- Optional GNSS module syncs RTC to accurate UTC time from satellites
+- Environmental sensor for temperature, humidity, and pressure
+- Fuel gauge to monitor battery status
+- FLASH memory for scheduling, configuration, and logging
+- BLE module communicates with configuration app and stores settings to shared FLASH memory
 
-This program is targeted towards MAX32666FTHR which talks to two other designs Mother board and Daughter Board. The Mother board houses power supplies, oscillators and AD4630 ADC where as the daughter board has all the Mics, OP-AMPS used for recording data. The code initiates SPI communication between MAX32666FTHR and AD4630 reading the recorded data from Mics. This data is simultaneously transferred to PC using USB on the FTHR. Please press SW1 on FTHR and start speaking (Blue LED is ON). Now the data recording time starts. Once the buffer is full the data is automatically moved to PC(RED LED is ON while data is being transferred to PC). Please check the board.c file in ${MSDKPath}\Libraries\Boards\MAX32665${BoardName}\Source path to learn switch and LED pins for specific board.
+## Repository Organization
 
-SwiftV2_DSS_48KHz_384KHz:
-
-This program is targeted towards MAX32666FTHR which talks to two other designs Mother board and Daughter Board.  The Mother board houses power supplies, oscillators and AD4630 ADC where as the daughter board has all the Mics, OP-AMPS used for recording data.  The code initiates SPI communication between MAX32666FTHR and AD4630 reading the recorded data from Mics. This data is simultaneously transferred to PC using USB on the FTHR.
-Please press SW1 on FTHR and start speaking (Blue LED is ON).  Now the data recording time starts.  Once the buffer is full the data is automatically moved to PC(RED LED is ON while data is being transferred to PC).  This program works for both 48KHz really well. This code has baremetal implementation which helps in reducing the latency between interrupt and SPI routine.
- Please check the board.c file in ${MSDKPath}\Libraries\Boards\MAX32665${BoardName}\Source path to learn switch and LED pins for specific board.
-
-
-Matlab Parse_SPI_fft.m:
-
-Please use an application like tera term or putty to log the USB data into a text file using the SwiftV2_DSS example. Now create a new folder and save the logged text file and also the Parse_SPI_fft.m file. This matlab code reads the log.txt file and performs the FFT on the data and finally plays the recording
-
-Matlab Serial-USB:
-
-This code reads the data from the COM port and plays it back
-
-
-**##Cornell Univeristy Github repo link:**
-
-Jordan Aceto:
-https://github.com/JordanAceto/magpie_code_snippets/tree/main/adc_dma_sd_card_write 
-
-Patrick:
-https://github.com/PTC-Coder/CodePlayGround/tree/main/RTC
+- The heart of this repo is a C language embedded firmware application targeted towards the main microcontroller
+- There is a second firmware application just for the Nordic BLE module
+- README files are sprinked throughout the directories to explain the purpose of each subdir
