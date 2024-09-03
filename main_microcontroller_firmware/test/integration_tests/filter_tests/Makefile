@@ -2,22 +2,23 @@
 BUILD_DIR = ./build/
 C_LIB = $(BUILD_DIR)clib.so
 
-SRC_DIR = ../../
-
 OUT_DIR = ./out/
 
-OVERRIDES_DIR = ../unit_tests/header_overrides/
+C_SRC  = ../../../lib/audio/decimation_filter.c
+C_SRC += ../../../lib/utils/data_converters.c
 
-C_SRC  = $(SRC_DIR)decimation_filter.c
-C_SRC += $(SRC_DIR)data_converters.c
+INCLUDES  = -I ../../../lib/audio/
+INCLUDES += -I ../../../lib/utils/
+INCLUDES += -I ../../unit_tests/header_overrides/
 
 all: $(C_LIB)
 
 $(C_LIB): $(BUILD_DIR)
-	gcc -fPIC -shared -o $(C_LIB) $(C_SRC) -I $(SRC_DIR) -I $(OVERRIDES_DIR)
+	gcc -fPIC -shared -o $(C_LIB) $(C_SRC) $(INCLUDES)
 
 $(BUILD_DIR):
 	mkdir $(BUILD_DIR)
+	mkdir $(OUT_DIR)
 
 clean:
 	rm -rf $(BUILD_DIR)
