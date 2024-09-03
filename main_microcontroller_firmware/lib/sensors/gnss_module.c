@@ -155,7 +155,7 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
             break; // case NMEA_PARSER_STATE_BUILDING_STRING
 
         case NMEA_PARSER_STATE_LINE_COMPLETE:
-
+        {
             // here is where most of the actual work happens, we got an NMEA string, now we parse it to get the GPS info
             const bool strict_mode = false; // if true, minmea only allows checksummed sentences
 
@@ -209,7 +209,7 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
             parser_state = NMEA_PARSER_STATE_WAITING;
 
             break; // case NMEA_PARSER_STATE_LINE_COMPLETE
-
+        }
         } // switch on parser_State
     } // while !timeout
 
