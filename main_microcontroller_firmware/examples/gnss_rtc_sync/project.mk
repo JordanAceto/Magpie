@@ -14,6 +14,10 @@
 # https://www.analog.com/en/education/education-library/videos/6313214207112.html
 SBT=0
 
+# use the BSP defined in the root of the main firmware location
+BSP_SEARCH_DIR := $(abspath ../../)
+BOARD = BSP
+
 PROJ_CFLAGS+=-mno-unaligned-access
 
 LIB_SDHC = 1
@@ -30,9 +34,6 @@ PROJ_LDFLAGS += -Wl,--print-memory-usage
 IPATH += ../../third_party/minmea
 SRCS += ../../third_party/minmea/minmea.c
 PROJ_CFLAGS += -Dtimegm=mktime # needed for the minmea lib
-
-IPATH += ../../lib/board/
-VPATH += ../../lib/board/
 
 IPATH += ../../lib/sensors/
 VPATH += ../../lib/sensors/

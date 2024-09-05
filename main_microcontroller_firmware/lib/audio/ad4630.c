@@ -1,9 +1,9 @@
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
 #include "ad4630.h"
+#include "board.h"
 #include "dma.h"
 #include "dma_regs.h"
-#include "gpio_helpers.h"
 #include "mxc_delay.h"
 #include "mxc_device.h"
 #include "nvic_table.h"

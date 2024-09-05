@@ -1,13 +1,13 @@
 /**
- * @file    status_led.h
+ * @file    bsp_status_led.h
  * @brief   A software module for controlling the status LEDs is represented here.
  *
  * This module requires:
  * - Exclusive use of pins P0.31, P1.15, and P1.15
  */
 
-#ifndef STATUS_LED_H__
-#define STATUS_LED_H__
+#ifndef BSP_STATUS_LED_H__
+#define BSP_STATUS_LED_H__
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
@@ -28,9 +28,9 @@ typedef enum
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `status_led_init()` initializes the status LEDs, must be called before using the LEDs
+ * @brief `status_led_init()` initializes the status LEDs, this must be called before using the LEDs
  *
- * @post the status LEDs are initialized and ready to use
+ * @post the status LEDs are initialized and ready to use, all LEDs are turned OFF.
  */
 void status_led_init();
 

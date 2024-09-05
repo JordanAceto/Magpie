@@ -13,7 +13,7 @@
         "MAXIM_PATH": "${config:MAXIM_PATH}"
     },
     "target": "MAX32665",
-    "board": "FTHR",
+    "board": "BSP",
     "project_name": "${workspaceFolderBasename}",
     "program_file": "${config:project_name}.elf",
     "symbol_file": "${config:program_file}",

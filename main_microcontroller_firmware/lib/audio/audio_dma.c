@@ -2,9 +2,9 @@
 
 #include "arm_math.h"
 #include "audio_dma.h"
+#include "board.h"
 #include "dma.h"
 #include "dma_regs.h"
-#include "gpio_helpers.h"
 #include "spi.h"
 #include "spi_regs.h"
 

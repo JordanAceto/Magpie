@@ -5,12 +5,11 @@
 #include <stdint.h>
 #include "mxc_delay.h"
 #include "tmr.h"
-#include "board.h"
 
+#include "board.h"
+#include "bsp_status_led.h"
 #include "gnss_module.h"
-#include "gpio_helpers.h"
 #include "real_time_clock.h"
-#include "status_led.h"
 
 #include <string.h>
 
@@ -34,7 +33,7 @@ static void error_handler(Status_LED_Color_t c);
 int main(void)
 {
     // simple LED pattern for a visual indication of a reset
-    status_led_init();
+
     status_led_set(STATUS_LED_COLOR_RED, true);
     MXC_Delay(500000);
     status_led_set(STATUS_LED_COLOR_GREEN, true);

@@ -3,8 +3,8 @@
 
 #include "mxc_device.h"
 
-#include "status_led.h"
-#include "gpio_helpers.h"
+#include "board.h"
+#include "bsp_status_led.h"
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 

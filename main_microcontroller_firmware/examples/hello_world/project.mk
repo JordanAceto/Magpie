@@ -14,28 +14,8 @@
 # https://www.analog.com/en/education/education-library/videos/6313214207112.html
 SBT=0
 
-# use the custom BSP located in ./BSP/
-BSP_SEARCH_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+# use the BSP defined in the root of the main firmware location
+BSP_SEARCH_DIR := $(abspath ../../)
 BOARD = BSP
 
-PROJ_CFLAGS+=-mno-unaligned-access
-
-LIB_SDHC = 1
-
-FATFS_VERSION = ff15
-
-LIB_CMSIS_DSP = 1
-
-MXC_OPTIMIZE_CFLAGS = -O2
-
 PROJ_LDFLAGS += -Wl,--print-memory-usage
-
-# 3rd party GNSS parsing lib
-IPATH += ./third_party/minmea/
-SRCS += ./third_party/minmea/minmea.c
-PROJ_CFLAGS += -Dtimegm=mktime # needed for the minmea lib
-
-IPATH += ./lib/utils/
-VPATH += ./lib/utils/
-
-VPATH += ./app/

@@ -5,8 +5,8 @@
 
 #include "tmr.h"
 
+#include "board.h"
 #include "gnss_module.h"
-#include "gpio_helpers.h"
 #include "real_time_clock.h"
 
 #include "minmea.h" // 3rd party NMEA parsing lib
