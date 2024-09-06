@@ -7,6 +7,7 @@
 #include "tmr.h"
 
 #include "board.h"
+#include "bsp_i2c.h"
 #include "bsp_status_led.h"
 #include "gnss_module.h"
 #include "real_time_clock.h"
@@ -55,33 +56,13 @@ int main(void)
         printf("[SUCCESS]--> GNSS init\n");
     }
 
-    if (MXC_I2C_Init(I2C_3V3, 1, 0) != E_NO_ERROR)
+    if (bsp_i2c_start(BSP_I2C_3V3_BUS) != BSP_I2C_ERROR_ALL_OK)
     {
         printf("[ERROR]--> I2C init\n");
-        error_handler(STATUS_LED_COLOR_RED);
     }
     else
     {
         printf("[SUCCESS]--> I2C init\n");
-    }
-    // I2C pins default to VDDIO for the logical high voltage, we want VDDIOH for 3.3v pullups
-    const mxc_gpio_cfg_t i2c1_pins = {
-        .port = MXC_GPIO0,
-        .mask = (MXC_GPIO_PIN_14 | MXC_GPIO_PIN_15),
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_ALT1,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&i2c1_pins);
-    if (MXC_I2C_SetFrequency(I2C_3V3, MXC_I2C_STD_MODE) != MXC_I2C_STD_MODE)
-    {
-        printf("[ERROR]--> I2C freq set\n");
-        error_handler(STATUS_LED_COLOR_RED);
-    }
-    else
-    {
-        printf("[SUCCESS]--> I2C freq set\n");
     }
 
     if (real_time_clock_init(I2C_3V3) != REAL_TIME_CLOCK_ERROR_ALL_OK)
