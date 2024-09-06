@@ -59,7 +59,7 @@ static bool overrun_occured = false;
  */
 static const mxc_gpio_cfg_t adc_busy_pin = {
     .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_3,
+    .mask = MXC_GPIO_PIN_4,
     .pad = MXC_GPIO_PAD_NONE,
     .func = MXC_GPIO_FUNC_IN,
     .vssel = MXC_GPIO_VSSEL_VDDIO,
