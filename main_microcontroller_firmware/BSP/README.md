@@ -1,5 +1,9 @@
 # Magpie Main Microcontroller Board Support Package (BSP)
 
+## See the MSDK user manual for information on how the BSP system works
+
+- https://analogdevicesinc.github.io/msdk//USERGUIDE/#custom-bsps
+
 ## GPIO pin table
 
 - Note that some of the pins are managed by the BSP, and others are managed by their respective modules
