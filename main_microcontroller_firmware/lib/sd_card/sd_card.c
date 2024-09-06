@@ -41,7 +41,7 @@ SD_Card_Error_t sd_card_init()
     }
 
     // without a delay here the next function was consistently returning an error
-    MXC_Delay(10000);
+    MXC_Delay(100000);
 
     if (MXC_SDHC_Lib_InitCard(SD_CARD_INIT_NUM_RETRIES) != E_NO_ERROR)
     {
