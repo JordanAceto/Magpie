@@ -11,8 +11,8 @@ SRCS += bsp_status_led.c
 
 MISC_DRIVERS_DIR ?= $(MAXIM_PATH)/Libraries/MiscDrivers
 
-VPATH += $(BOARD_DIR)/Source
-IPATH += $(BOARD_DIR)/Include
+VPATH += $(BOARD_DIR)
+IPATH += $(BOARD_DIR)
 
 VPATH += $(MISC_DRIVERS_DIR)
 IPATH += $(MISC_DRIVERS_DIR)
