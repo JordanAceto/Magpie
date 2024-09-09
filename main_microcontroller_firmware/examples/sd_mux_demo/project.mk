@@ -20,9 +20,15 @@ BOARD = BSP
 
 PROJ_CFLAGS+=-mno-unaligned-access
 
-LIB_SDHC = 1
-
 FATFS_VERSION = ff15
+SDHC_DRIVER_DIR = ../../MSDK_overrides/SDHC/
+
+include ../../MSDK_overrides/SDHC/sdhc.mk
+include ../../MSDK_overrides/SDHC/ff15/fat32.mk
+
+IPATH += ../../MSDK_overrides/SDHC/Include/
+IPATH += ../../MSDK_overrides/SDHC/ff15/source/
+IPATH += ../../MSDK_overrides/SDHC/ff15/source/conf/
 
 IPATH += ../../lib/sd_card/
 VPATH += ../../lib/sd_card/
