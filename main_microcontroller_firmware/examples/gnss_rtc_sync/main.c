@@ -14,11 +14,6 @@
 
 #include <string.h>
 
-/* Private definitions -----------------------------------------------------------------------------------------------*/
-
-// this I2C bus serves the RTC and other peripherals
-#define I2C_3V3 (MXC_I2C1_BUS0)
-
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
@@ -52,11 +47,10 @@ int main(void)
     }
     else
     {
-        gnss_module_enable();
         printf("[SUCCESS]--> GNSS init\n");
     }
 
-    if (bsp_i2c_start(BSP_I2C_3V3_BUS) != BSP_I2C_ERROR_ALL_OK)
+    if (bsp_3v3_i2c_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> I2C init\n");
     }
@@ -65,7 +59,7 @@ int main(void)
         printf("[SUCCESS]--> I2C init\n");
     }
 
-    if (real_time_clock_init(I2C_3V3) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_init(BSP_I2C_3V3_BUS_HANDLE) != REAL_TIME_CLOCK_ERROR_ALL_OK)
     {
         printf("[ERROR]--> RTC init\n");
         error_handler(STATUS_LED_COLOR_RED);

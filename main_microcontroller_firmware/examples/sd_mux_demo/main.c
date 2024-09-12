@@ -44,7 +44,7 @@ int main(void)
 {
     printf("\n******************* SD Card Bank Example ******************* \n");
 
-    if (bsp_i2c_start(BSP_I2C_3V3_BUS) != BSP_I2C_ERROR_ALL_OK)
+    if (bsp_3v3_i2c_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> I2C init\n");
     }
@@ -53,7 +53,7 @@ int main(void)
         printf("[SUCCESS]--> I2C init\n");
     }
 
-    if (sd_card_bank_ctl_init(bsp_i2c_get_handle(BSP_I2C_3V3_BUS)) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if (sd_card_bank_ctl_init(BSP_I2C_3V3_BUS_HANDLE) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
     {
         printf("[ERROR]--> SD card bank ctl init\n");
     }

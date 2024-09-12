@@ -7,7 +7,11 @@ SRCS += stdio.c
 
 SRCS += bsp_i2c.c
 SRCS += bsp_pushbutton.c
+SRCS += bsp_sdhc.c
+SRCS += bsp_spi.c
+SRCS += bsp_spixf.c
 SRCS += bsp_status_led.c
+SRCS += bsp_uart.c
 
 MISC_DRIVERS_DIR ?= $(MAXIM_PATH)/Libraries/MiscDrivers
 

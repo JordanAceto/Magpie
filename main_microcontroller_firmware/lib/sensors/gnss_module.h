@@ -33,33 +33,23 @@ typedef enum
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `gnss_module_init()` initializes the GNSS module, this must be called before using the GNSS module. The GNSS
- * module is powered down after this function returns.
+ * @brief `gnss_module_init()` initializes and powers on the GNSS module, this must be called before using the GNSS.
  *
- * @post the GNSS module is initialized and UART2 is configured as required for the GNSS module. After initialization
- * the GNS module is powered down, you still need to enable it via `gnss_module_enable()` before use.
+ * @post the GNSS module is initialized, powered on, and ready to use.
  *
  * @retval `GNSS_MODULE_ERROR_ALL_OK` if initialization is successful, else and enumerated error.
  */
 GNSS_Module_Error_t gnss_module_init();
 
 /**
- * @brief `gnss_module_enable()` powers on the GNSS module.
+ * @brief `gnss_module_deinit()` de-initializes and powers down the GNSS module. The GNSS module must then be
+ * re-initialized before using it again.
  *
- * @pre `gnss_module_init()` has been successfully called.
+ * @post the GNSS module is de-initialized and powered down, and all related GPIO pin are set to high-Z.
  *
- * @post the GNSS module is powered on.
+ * @retval `GNSS_MODULE_ERROR_ALL_OK` if de-initialization is successful, else and enumerated error.
  */
-void gnss_module_enable();
-
-/**
- * @brief `gnss_module_disable()` powers off the GNSS module.
- *
- * @pre `gnss_module_init()` has been successfully called.
- *
- * @post the GNSS module is powered off.
- */
-void gnss_module_disable();
+GNSS_Module_Error_t gnss_module_deinit();
 
 /**
  * @brief `gnss_module_sync_RTC_to_GNSS_time(t)` syncs the Real Time Clock module to the time reported by the GNSS

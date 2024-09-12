@@ -6,6 +6,7 @@
 #include "tmr.h"
 
 #include "board.h"
+#include "bsp_uart.h"
 #include "gnss_module.h"
 #include "real_time_clock.h"
 
@@ -32,72 +33,76 @@ typedef enum
     NMEA_PARSER_STATE_LINE_COMPLETE,   // we saw the end of sentence char '\n'
 } NMEA_Parser_State_t;
 
-/* Private variables -------------------------------------------------------------------------------------------------*/
-
-// this pin controls a load switch that powers the GNSS module, high to turn ON, low for OFF
-static mxc_gpio_cfg_t gnss_enable_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_23,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIOH,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
-// the PPS signal from the GNSS module pulses high-low once per second when the GPS fix is active
-static mxc_gpio_cfg_t gnss_pps_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_24,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_IN,
-    .vssel = MXC_GPIO_VSSEL_VDDIOH,
-};
-
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
  * @brief `is_ascii(c)` is true iff integer `c` represents a valid ascii character
  */
-bool is_ascii(int c);
+static bool is_ascii(int c);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
 GNSS_Module_Error_t gnss_module_init()
 {
+    // power up the GNSS module
+    const mxc_gpio_cfg_t gnss_enable_pin = {
+        .port = MXC_GPIO0,
+        .mask = MXC_GPIO_PIN_23,
+        .pad = MXC_GPIO_PAD_NONE,
+        .func = MXC_GPIO_FUNC_OUT,
+        .vssel = MXC_GPIO_VSSEL_VDDIOH,
+        .drvstr = MXC_GPIO_DRVSTR_0,
+    };
     MXC_GPIO_Config(&gnss_enable_pin);
+    gpio_write_pin(&gnss_enable_pin, true);
 
-    // turn the module off to start
-    gnss_module_disable();
-
+    // set up the PPS pin
+    const mxc_gpio_cfg_t gnss_pps_pin = {
+        .port = MXC_GPIO0,
+        .mask = MXC_GPIO_PIN_24,
+        .pad = MXC_GPIO_PAD_NONE,
+        .func = MXC_GPIO_FUNC_IN,
+        .vssel = MXC_GPIO_VSSEL_VDDIOH,
+    };
     MXC_GPIO_Config(&gnss_pps_pin);
 
-    if (MXC_UART_Init(GNSS_UART_HANDLE, GNSS_MODULE_UART_BAUD, MAP_B) != E_NO_ERROR)
+    // configure the UART pins & clock for communicating with the GNSS module
+    if (bsp_gnss_uart_init() != E_NO_ERROR)
     {
         return GNSS_MODULE_UART_ERROR;
     }
 
-    // reset the tx and rx pins, they are set to 1.8v domain in MXC_UART_Init(), we want them in the 3V3 domain
-    mxc_gpio_cfg_t rx_tx_pins = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_28 | MXC_GPIO_PIN_29,
-        .pad = MXC_GPIO_PAD_WEAK_PULL_UP,
-        .func = MXC_GPIO_FUNC_ALT3,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&rx_tx_pins);
-
     return GNSS_MODULE_ERROR_ALL_OK;
 }
 
-void gnss_module_enable()
+GNSS_Module_Error_t gnss_module_deinit()
 {
-    gpio_write_pin(&gnss_enable_pin, true);
-}
+    const mxc_gpio_cfg_t gnss_enable_pin_high_z = {
+        .port = MXC_GPIO0,
+        .mask = MXC_GPIO_PIN_23,
+        .pad = MXC_GPIO_PAD_NONE,
+        .func = MXC_GPIO_FUNC_IN,
+        .vssel = MXC_GPIO_VSSEL_VDDIOH,
+        .drvstr = MXC_GPIO_DRVSTR_0,
+    };
+    gpio_write_pin(&gnss_enable_pin_high_z, false); // make sure it's low, has no effect if it was already high-Z
+    MXC_GPIO_Config(&gnss_enable_pin_high_z);
 
-void gnss_module_disable()
-{
-    gpio_write_pin(&gnss_enable_pin, false);
+    const mxc_gpio_cfg_t gnss_pps_pin_high_z = {
+        .port = MXC_GPIO0,
+        .mask = MXC_GPIO_PIN_24,
+        .pad = MXC_GPIO_PAD_NONE,
+        .func = MXC_GPIO_FUNC_IN,
+        .vssel = MXC_GPIO_VSSEL_VDDIOH,
+    };
+    MXC_GPIO_Config(&gnss_pps_pin_high_z);
+
+    if (bsp_gnss_uart_deinit() != E_NO_ERROR)
+    {
+        return GNSS_MODULE_UART_ERROR;
+    }
+
+    return GNSS_MODULE_ERROR_ALL_OK;
 }
 
 GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)

@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 
+#include "bsp_uart.h"
 #include "mxc_device.h"
 
 /* Public defines ----------------------------------------------------------------------------------------------------*/
@@ -21,7 +22,7 @@
 #define BOARD_CUSTOM (1)
 
 #define CONSOLE_UART (1)
-#define CONSOLE_BAUD (115200)
+#define CONSOLE_BAUD (BSP_CONSOLE_UART_BAUD)
 
 /* Public function declarations --------------------------------------------------------------------------------------*/
 

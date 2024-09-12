@@ -18,4 +18,20 @@ SBT=0
 BSP_SEARCH_DIR := $(abspath ../../)
 BOARD = BSP
 
+# do manual pin config, don't use the pin constants in msdk/Libraries/PeriphDrivers/Source/SYS/pins_me14.c
+# this means we need to explicitly set up all the pins for the peripherals we use
+PROJ_CFLAGS += -DMSDK_NO_GPIO_CLK_INIT
+
+# Use the SDHC lib in ./MSDK_overrides/SDHC/ instead of the files supplied by the MSKD, this is because the MSKD
+# version is hardcoded to 1-bit mode, and we want 4-bit mode
+FATFS_VERSION = ff15
+SDHC_DRIVER_DIR = ../../MSDK_overrides/SDHC/
+
+include ../../MSDK_overrides/SDHC/sdhc.mk
+include ../../MSDK_overrides/SDHC/ff15/fat32.mk
+
+IPATH += ../../MSDK_overrides/SDHC/Include/
+IPATH += ../../MSDK_overrides/SDHC/ff15/source/
+IPATH += ../../MSDK_overrides/SDHC/ff15/source/conf/
+
 PROJ_LDFLAGS += -Wl,--print-memory-usage

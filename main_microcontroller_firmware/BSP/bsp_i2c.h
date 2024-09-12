@@ -1,7 +1,6 @@
 /**
  * @file      bsp_i2c.h
- * @brief     This module is responsible for starting and stopping the I2C busses used by the sytem, and for acquiring
- *            handles to the I2C interfaces used.
+ * @brief     This module is responsible for initializing and de-initializing the I2C busses used by the sytem.
  *
  * This module requires:
  * - Shared use of I2C0 and I2C1
@@ -15,60 +14,56 @@
 
 #include "i2c.h"
 
-/* Public enumerations -----------------------------------------------------------------------------------------------*/
+/* Public definitions ------------------------------------------------------------------------------------------------*/
 
 /**
- * @brief enumerated BSP I2C errors are represented here.
+ * @brief The I2C bus serving the 1.8 volt domain is represented here.
  */
-typedef enum
-{
-    BSP_I2C_ERROR_ALL_OK,
-    BSP_I2C_INITIALIZATION_ERROR,
-    BPS_I2C_FREQUENCY_SET_ERROR,
-    BSP_I2C_SHUTDOWN_ERROR,
-} BSP_I2C_Error_t;
+#define BSP_I2C_1V8_BUS_HANDLE (MXC_I2C0_BUS0)
+#define BSP_I2C_1V8_BUS_SPEED (MXC_I2C_STD_MODE)
 
 /**
- * @brief enumerated I2C busses used by the sytem are represented here.
+ * @brief The I2C bus serving the 3.3 volt domain is represented here.
  */
-typedef enum
-{
-    BSP_I2C_1V8_BUS,
-    BSP_I2C_3V3_BUS,
-} BSP_I2C_Bus_t;
+#define BSP_I2C_3V3_BUS_HANDLE (MXC_I2C1_BUS0)
+#define BSP_I2C_3V3_BUS_SPEED (MXC_I2C_STD_MODE)
 
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `bsp_i2c_get_handle(b)` is a pointer to the I2C handle represented by bus `b`
+ * @brief `bsp_1v8_i2c_init()` initializes and starts I2C0 bus as an I2C master in the 1.8V domain.
  *
- * @param bus the I2C handle to get.
+ * @post the I2C0 bus is initialized and ready to use. The GPIO pins associated with the bus are pulled up to 1.8V.
  *
- * @retval the I2C bus represented by the given bus enumeration.
+ * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-mxc_i2c_regs_t *bsp_i2c_get_handle(BSP_I2C_Bus_t bus);
+int bsp_1v8_i2c_init();
 
 /**
- * @brief `bsp_i2c_start(b)` initializes and starts I2C bus `b` as an I2C master.
+ * @brief `bsp_1V8_i2c_deinit()` de-initializes the I2C0 bus and sets the associated pins to high-Z.
  *
- * @param bus the bus to start.
+ * @post the I2C0 bus is de-initialized. The GPIO pins associated with the bus are high-Z.
  *
- * @post the I2C bus is initialized and ready to use. The GPIO pins associated with bus `b` are pulled up to the
- * appropriate voltage.
- *
- * @retval `BSP_I2C_ERROR_ALL_OK` if starting bus `b` was successful, else an error code.
+ * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-BSP_I2C_Error_t bsp_i2c_start(BSP_I2C_Bus_t bus);
+int bsp_1V8_i2c_deinit();
 
 /**
- * @brief `bsp_i2c_stop(b)` deinitializes and stops I2C bus `b`.
+ * @brief `bsp_3v3_i2c_init()` initializes and starts I2C1 bus as an I2C master in the 3.3V domain.
  *
- * @param bus the I2C bus to stop.
+ * @post the I2C1 bus is initialized and ready to use. The GPIO pins associated with the bus are pulled up to 3.3V.
  *
- * @post bus `b` is stopped and the GPIO pins associated with that bus are placed in a high impedance state.
- *
- * @retval `BSP_I2C_ERROR_ALL_OK` if stopping bus `b` was successful, else an error code.
+ * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-BSP_I2C_Error_t bsp_i2c_stop(BSP_I2C_Bus_t bus);
+int bsp_3v3_i2c_init();
+
+/**
+ * @brief `bsp_3v3_i2c_deinit()` de-initializes the I2C1 bus and sets the associated pins to high-Z.
+ *
+ * @post the I2C1 bus is de-initialized. The GPIO pins associated with the bus are high-Z.
+ *
+ * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
+ */
+int bsp_3v3_i2c_deinit();
 
 #endif
