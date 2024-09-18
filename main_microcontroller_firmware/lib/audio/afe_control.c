@@ -5,6 +5,7 @@
 #include "mxc_device.h"
 
 #include "afe_control.h"
+#include "bsp_i2c.h"
 
 /* Private defines ---------------------------------------------------------------------------------------------------*/
 
@@ -14,9 +15,6 @@
 #define MAX14662_DUMMY_REGISTER (0x00u)
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
-
-// the I2C handle to use
-static mxc_i2c_regs_t *hi2c_;
 
 // buffers for I2C transactions
 static unsigned char tx_buff[MAX14662_TX_BUFF_LEN];
@@ -44,8 +42,6 @@ const mxc_gpio_cfg_t afe_ch1_enable_pin = {
 
 void afe_control_init(mxc_i2c_regs_t *hi2c)
 {
-    hi2c_ = hi2c;
-
     MXC_GPIO_Config(&afe_ch0_enable_pin);
     MXC_GPIO_Config(&afe_ch1_enable_pin);
 }
@@ -105,7 +101,7 @@ AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Cont
     tx_buff[1] = gain;
 
     mxc_i2c_req_t req = {
-        .i2c = hi2c_,
+        .i2c = BSP_I2C_1V8_BUS_HANDLE,
         .addr = channel,
         .tx_buf = tx_buff,
         .tx_len = MAX14662_TX_BUFF_LEN,
@@ -128,7 +124,7 @@ AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
     }
 
     mxc_i2c_req_t req = {
-        .i2c = hi2c_,
+        .i2c = BSP_I2C_1V8_BUS_HANDLE,
         .addr = channel,
         .tx_buf = NULL,
         .tx_len = 0,

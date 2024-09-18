@@ -13,8 +13,6 @@
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
-#include "i2c.h"
-
 #include "time_helpers.h"
 
 /* Public enumerations -----------------------------------------------------------------------------------------------*/
@@ -32,18 +30,16 @@ typedef enum
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `real_time_clock_init(hi2c)` initializes the real time clock using `hi2c` as the I2C handle for the DS3231.
- * The real time clock is composed of both the external DS3231 chip and the onboard MAX32666 RTC.
+ * @brief `real_time_clock_init()` initializes the real time clock. the RTC is composed of both the external DS3231
+ * chip and the onboard MAX32666 RTC.
  *
- * @pre `hi2c` is configured as an I2C master and has pullup resistors to 3.3V.
- *
- * @param hi2c the I2C handle to use for communication with the DS3231 RTC chip.
+ * @pre the I2C bus on the 3.3V domain is configured as an I2C master and has pullup resistors to 3.3V.
  *
  * @post the system RTC is initialized and ready to use, the 32kHz clock from the DS3231 is enabled.
  *
  * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
  */
-Real_Time_Clock_Error_t real_time_clock_init(mxc_i2c_regs_t *hi2c);
+Real_Time_Clock_Error_t real_time_clock_init();
 
 /**
  * @brief `real_time_clock_set_datetime(t)` sets the real time clock to time `t`

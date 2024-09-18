@@ -15,7 +15,6 @@
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
 #include <stdbool.h>
-#include "i2c.h"
 
 /* Public defines ----------------------------------------------------------------------------------------------------*/
 
@@ -50,10 +49,10 @@ typedef enum
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `sd_card_bank_ctl_init(i2c)` initializes the SD card bank with I2C handle `i2c` and configures all of the I2C
- * GPIO port expander pins used to control the SD card bank.
+ * @brief `sd_card_bank_ctl_init()` initializes the SD card bank and configures all of the I2C GPIO port expander
+ * pins used to control the SD card bank.
  *
- * @param hi2c: pointer to the I2C handle to use for I2C transactions.
+ * @pre the I2C bus on the 3.3V domain is configured as an I2C master and has pullup resistors to 3.3V.
  *
  * @post All input/output pins of the port expander are configured and the SD card bank is powered down.
  *
@@ -61,7 +60,7 @@ typedef enum
  *
  * This must be performed before any other SD card bank functions are called.
  */
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init(mxc_i2c_regs_t *hi2c);
+SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init();
 
 /**
  * @brief `sd_card_bank_ctl_disable_all()` deselects any active card slot and powers down the SD card bank.

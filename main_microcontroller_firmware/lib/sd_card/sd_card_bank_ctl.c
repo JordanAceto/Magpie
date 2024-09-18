@@ -24,6 +24,7 @@
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
+#include "bsp_i2c.h"
 #include "sd_card_bank_ctl.h"
 #include <stddef.h> // for NULL
 
@@ -101,9 +102,6 @@ typedef enum uint8_t
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 
-// the I2C handle to use
-mxc_i2c_regs_t *hi2c_;
-
 // a buffer for MAX7312 reads/writes, we need a maximum of two bytes
 #define MAX7312_I2C_BUFF_LEN (2u)
 static uint8_t max_7312_i2c_buff[MAX7312_I2C_BUFF_LEN];
@@ -152,8 +150,6 @@ static SD_Card_Bank_Ctl_Error_t max7312_reg_read(MAX7312_Register_Addr_t reg, ui
 
 SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init(mxc_i2c_regs_t *hi2c)
 {
-    hi2c_ = hi2c;
-
     // Reset all ports to zero, they initialize to 1 on power up.
     if (sd_card_bank_ctl_disable_all() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
     {
@@ -305,7 +301,7 @@ SD_Card_Bank_Ctl_Error_t max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t 
     max_7312_i2c_buff[1u] = val;
 
     mxc_i2c_req_t req = {
-        .i2c = hi2c_,
+        .i2c = BSP_I2C_3V3_BUS_HANDLE,
         .addr = MAX7312_7_BIT_I2C_ADDR,
         .tx_buf = max_7312_i2c_buff,
         .tx_len = num_bytes_to_write,
@@ -326,7 +322,7 @@ SD_Card_Bank_Ctl_Error_t max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *
     max_7312_i2c_buff[0u] = reg;
 
     mxc_i2c_req_t req = {
-        .i2c = hi2c_,
+        .i2c = BSP_I2C_3V3_BUS_HANDLE,
         .addr = MAX7312_7_BIT_I2C_ADDR,
         .tx_buf = max_7312_i2c_buff,
         .tx_len = num_bytes_to_write,

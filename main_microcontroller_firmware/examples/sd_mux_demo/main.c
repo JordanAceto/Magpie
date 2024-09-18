@@ -53,7 +53,7 @@ int main(void)
         printf("[SUCCESS]--> I2C init\n");
     }
 
-    if (sd_card_bank_ctl_init(BSP_I2C_3V3_BUS_HANDLE) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if (sd_card_bank_ctl_init() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
     {
         printf("[ERROR]--> SD card bank ctl init\n");
     }

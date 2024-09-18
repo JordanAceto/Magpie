@@ -3,8 +3,10 @@
 
 #include <stdio.h>
 
-#include "real_time_clock.h"
+#include "i2c.h"
 
+#include "bsp_i2c.h"
+#include "real_time_clock.h"
 #include "time_helpers.h"
 
 /* Private defines ---------------------------------------------------------------------------------------------------*/
@@ -82,9 +84,6 @@ typedef enum
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 
-// the I2C handle to use to communicate with the DS3231
-static mxc_i2c_regs_t *hi2c_;
-
 // interrupts come from the RTC to the MAX
 static mxc_gpio_cfg_t rtc_int_pin = {
     .port = MXC_GPIO0,
@@ -132,10 +131,8 @@ static Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t nu
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-Real_Time_Clock_Error_t real_time_clock_init(mxc_i2c_regs_t *hi2c)
+Real_Time_Clock_Error_t real_time_clock_init()
 {
-    hi2c_ = hi2c;
-
     MXC_GPIO_Config(&rtc_int_pin);
 
     uint8_t write_buff[] = {
@@ -265,7 +262,7 @@ Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *re
     read_buff[0] = start_reg;
 
     mxc_i2c_req_t req = {
-        .i2c = hi2c_,
+        .i2c = BSP_I2C_3V3_BUS_HANDLE,
         .addr = DS3231_7_BIT_I2C_ADDR,
         .tx_buf = read_buff,
         .tx_len = 1,
@@ -283,7 +280,7 @@ Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *re
 Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes_to_write)
 {
     mxc_i2c_req_t req = {
-        .i2c = hi2c_,
+        .i2c = BSP_I2C_3V3_BUS_HANDLE,
         .addr = DS3231_7_BIT_I2C_ADDR,
         .tx_buf = write_buff,
         .tx_len = num_bytes_to_write,

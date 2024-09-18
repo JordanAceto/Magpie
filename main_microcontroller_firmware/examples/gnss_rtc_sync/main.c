@@ -59,7 +59,7 @@ int main(void)
         printf("[SUCCESS]--> I2C init\n");
     }
 
-    if (real_time_clock_init(BSP_I2C_3V3_BUS_HANDLE) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_init() != REAL_TIME_CLOCK_ERROR_ALL_OK)
     {
         printf("[ERROR]--> RTC init\n");
         error_handler(STATUS_LED_COLOR_RED);

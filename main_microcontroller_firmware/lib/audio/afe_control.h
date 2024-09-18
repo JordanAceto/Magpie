@@ -12,10 +12,6 @@
 #ifndef AFE_GAIN_CTL_H_
 #define AFE_GAIN_CTL_H_
 
-/* Includes ----------------------------------------------------------------------------------------------------------*/
-
-#include "i2c.h"
-
 /* Public enumerations -----------------------------------------------------------------------------------------------*/
 
 /**
@@ -58,15 +54,13 @@ typedef enum
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `afe_control_init(hi2c)` initializes the AFE gain control and sets the internal I2C handle to `hi2c`.
+ * @brief `afe_control_init()` initializes the AFE gain control circuitry.
  *
- * @pre `hi2c` is configured as an I2C master and has pullup resistors to 1.8V.
- *
- * @param hi2c the I2C handle to use for all AFE gain control I2C communication.
+ * @pre the I2C bus on the 1.8V domain is configured as an I2C master and has pullup resistors to 1.8V.
  *
  * @post the AFE gain control is initialized and ready to use.
  */
-void afe_control_init(mxc_i2c_regs_t *hi2c);
+void afe_control_init();
 
 /**
  * @brief `afe_control_enable(c)` enables AFE channel `c`, powering it on.
