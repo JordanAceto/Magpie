@@ -179,7 +179,17 @@ uint32_t data_converters_q31_to_q15(const q31_t *src, q15_t *dest, uint32_t src_
  *
  * @retval the length of the data transferred to the `dest` buffer in bytes.
  *
- * TODO: add example
+ * Example:
+ * The below diagram shows 4 32-bit samples from each source interleaved into 8 16-bit samples in the destination.
+ * Only the most significant 16 bits of each source sample are used.
+ *
+ *  11 22 33 44, 55 66 77 88, 99 AA BB CC, DD EE FF 00  <- 4 q31_t samples from src0
+ *  FF EE DD CC, BB AA 99 88, 77 66 55 44, 33 22 11 00  <- 4 q31_t samples from src1
+ * |------------|------------|------------|-----------| <- demarcation of the 32 bit input samples
+ *
+ *  11 22, FF EE, 55 66, BB AA, 99 AA, 77 66, DD EE, 33 22  <- 8 truncated and interleaved q15_t samples in dest
+ * |------|------|------|------|------|------|------|-----| <- demarcation of the eight 16 bit output samples
+ *  src0   src1   src0   src1   src0   src1   src0   src1
  */
 uint32_t data_converters_interleave_2_q31_to_q15(const q31_t *src0, const q31_t *src1, q15_t *dest, uint32_t src_len_in_samps);
 
@@ -196,7 +206,17 @@ uint32_t data_converters_interleave_2_q31_to_q15(const q31_t *src0, const q31_t 
  *
  * @retval the length of the data transferred to the `dest` buffer in bytes.
  *
- * TODO: add example
+ * Example:
+ * The below diagram shows 2 32-bit samples from each source interleaved into 4 24-bit samples in the destination.
+ * Only the most significant 24 bits of each source sample are used.
+ *
+ *  11 22 33 44, 55 66 77 88  <- 2 q31_t samples from src0
+ *  AA BB CC DD, EE FF 00 11  <- 2 q31_t samples from src1
+ * |------------|-----------| <- demarcation of the 32 bit input samples
+ *
+ *  11 22, 33 AA, BB CC, 55 66, 77 EE, FF 00  <- 4 truncated and interleaved i24 samples in dest
+ * |---------|----------|---------|---------| <- demarcation of the four 24 bit output samples split across 6 bytes
+ *    src0       src1       src0      src1
  */
 uint32_t data_converters_interleave_2_q31_to_i24(const q31_t *src0, const q31_t *src1, uint8_t *dest, uint32_t src_len_in_samps);
 

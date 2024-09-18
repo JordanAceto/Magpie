@@ -377,30 +377,248 @@ TEST(DataConvertersTest, q31_to_q15_works_in_place)
 
 TEST(DataConvertersTest, data_converters_interleave_2_q31_to_q15_smallest_chunk_check_all_bytes)
 {
-    FAIL() << "TODO write tests for this function";
+    // Define the smallest chunk size (4 samples for each source)
+    const uint32_t src_len_in_samps = 4;
+    const uint32_t dest_len_in_bytes = src_len_in_samps * 2 * sizeof(q15_t);
+
+    // Create source arrays
+    q31_t src0[src_len_in_samps] = {0x11223344, 0x55667788, 0x99AABBCC, 0xDDEEFF00};
+    q31_t src1[src_len_in_samps] = {0xFFEEDDCC, 0xBBAA9988, 0x77665544, 0x33221100};
+
+    // Create destination array
+    q15_t dest[dest_len_in_bytes / sizeof(q15_t)] = {0};
+
+    // Call the function
+    uint32_t bytes_written = data_converters_interleave_2_q31_to_q15(src0, src1, dest, src_len_in_samps);
+
+    // Check the number of bytes written
+    ASSERT_EQ(bytes_written, dest_len_in_bytes);
+
+    ASSERT_THAT(dest, ElementsAre(
+                          0x1122, 0xFFEE,
+                          0x5566, 0xBBAA,
+                          0x99AA, 0x7766,
+                          0xDDEE, 0x3322));
 }
 
-TEST(DataConvertersTest, data_converters_interleave_2_q31_to_q15_check_sample_in_the_middle)
+TEST(DataConvertersTest, data_converters_interleave_2_q31_to_q15_check_samples_in_the_middle)
 {
-    FAIL() << "TODO write tests for this function";
+    // Define a larger sample size to have a "middle" to check
+    const uint32_t src_len_in_samps = 16;
+    const uint32_t dest_len_in_bytes = src_len_in_samps * 2 * sizeof(q15_t);
+
+    // Create source arrays and fill with incrementing values
+    q31_t src0[src_len_in_samps];
+    q31_t src1[src_len_in_samps];
+    for (uint32_t i = 0; i < src_len_in_samps; ++i)
+    {
+        src0[i] = (i << 16) | i;                 // Upper 16 bits: i, Lower 16 bits: i
+        src1[i] = ((i + 100) << 16) | (i + 100); // Upper 16 bits: i+100, Lower 16 bits: i+100
+    }
+
+    // Create destination array
+    q15_t dest[dest_len_in_bytes / sizeof(q15_t)] = {0};
+
+    // Call the function
+    uint32_t bytes_written = data_converters_interleave_2_q31_to_q15(src0, src1, dest, src_len_in_samps);
+
+    // Check the number of bytes written
+    ASSERT_EQ(bytes_written, dest_len_in_bytes);
+
+    // Check a sample in the middle
+    const uint32_t middle_sample = src_len_in_samps / 2;
+
+    // Check src0 middle sample
+    ASSERT_EQ(dest[middle_sample * 2], static_cast<q15_t>(src0[middle_sample] >> 16));
+
+    // Check src1 middle sample
+    ASSERT_EQ(dest[middle_sample * 2 + 1], static_cast<q15_t>(src1[middle_sample] >> 16));
+
+    // Additional checks for surrounding samples
+    const uint32_t check_range = 2; // Check 2 samples before and after the middle
+    for (uint32_t i = middle_sample - check_range; i <= middle_sample + check_range; ++i)
+    {
+        ASSERT_EQ(dest[i * 2], static_cast<q15_t>(src0[i] >> 16))
+            << "Mismatch in src0 at sample " << i;
+        ASSERT_EQ(dest[i * 2 + 1], static_cast<q15_t>(src1[i] >> 16))
+            << "Mismatch in src1 at sample " << i;
+    }
 }
 
 TEST(DataConvertersTest, data_converters_interleave_2_q31_to_q15_should_not_go_past_array_end)
 {
-    FAIL() << "TODO write tests for this function";
+    // Define source arrays with extra elements that should not be processed
+    const uint32_t src_len_in_samps = 4;
+    const uint32_t extra_samples = 2;
+    const uint32_t total_src_len = src_len_in_samps + extra_samples;
+
+    q31_t src0[total_src_len] = {
+        0x11223344, 0x55667788, 0x99AABBCC, 0xDDEEFF00,
+        0xDEADBEEF, 0xCAFEBABE // Extra samples that should not be processed
+    };
+    q31_t src1[total_src_len] = {
+        0xFFEEDDCC, 0xBBAA9988, 0x77665544, 0x33221100,
+        0xFEEDFACE, 0xC0FFEE00 // Extra samples that should not be processed
+    };
+
+    // Create destination array with extra space
+    const uint32_t dest_len_in_samps = src_len_in_samps * 2;
+    const uint32_t dest_extra_space = 4;
+    const uint32_t total_dest_len = dest_len_in_samps + dest_extra_space;
+    q15_t dest[total_dest_len];
+
+    // Initialize destination array with a known pattern
+    for (uint32_t i = 0; i < total_dest_len; ++i)
+    {
+        dest[i] = 12345;
+    }
+
+    // Call the function with the specified length
+    uint32_t bytes_written = data_converters_interleave_2_q31_to_q15(src0, src1, dest, src_len_in_samps);
+
+    // Check the number of bytes written
+    ASSERT_EQ(bytes_written, src_len_in_samps * 2 * sizeof(q15_t));
+
+    // Check that the function did not write past the expected end of the destination array
+    for (uint32_t i = dest_len_in_samps; i < total_dest_len; ++i)
+    {
+        ASSERT_EQ(dest[i], 12345) << "Unexpected value at index " << i;
+    }
+
+    // Check that the function did not read past the end of the source arrays
+    ASSERT_EQ(src0[src_len_in_samps], 0xDEADBEEF) << "Source array 0 was modified unexpectedly";
+    ASSERT_EQ(src1[src_len_in_samps], 0xFEEDFACE) << "Source array 1 was modified unexpectedly";
 }
 
 TEST(DataConvertersTest, data_converters_interleave_2_q31_to_i24_smallest_chunk_check_all_bytes)
 {
-    FAIL() << "TODO write tests for this function";
+    // Define the smallest chunk size (4 samples for each source)
+    const uint32_t src_len_in_samps = 4;
+    const uint32_t dest_len_in_bytes = src_len_in_samps * 2 * 3; // 3 bytes per i24 sample
+
+    // Create source arrays
+    q31_t src0[src_len_in_samps] = {0x11223344, 0x55667788, 0x99AABBCC, 0xDDEEFF00};
+    q31_t src1[src_len_in_samps] = {0xAABBCCDD, 0xEEFF0011, 0x22334455, 0x66778899};
+
+    // Create destination array
+    uint8_t dest[dest_len_in_bytes] = {0};
+
+    // Call the function
+    uint32_t bytes_written = data_converters_interleave_2_q31_to_i24(src0, src1, dest, src_len_in_samps);
+
+    // Check the number of bytes written
+    ASSERT_EQ(bytes_written, dest_len_in_bytes);
+
+    ASSERT_THAT(dest, ElementsAre(
+                          0x33, 0x22, 0x11,
+                          0xCC, 0xBB, 0xAA,
+                          0x77, 0x66, 0x55,
+                          0x00, 0xFF, 0xEE,
+                          0xBB, 0xAA, 0x99,
+                          0x44, 0x33, 0x22,
+                          0xFF, 0xEE, 0xDD,
+                          0x88, 0x77, 0x66));
 }
 
-TEST(DataConvertersTest, data_converters_interleave_2_q31_to_i24_check_sample_in_the_middle)
+TEST(DataConvertersTest, data_converters_interleave_2_q31_to_i24_check_samples_in_the_middle)
 {
-    FAIL() << "TODO write tests for this function";
+    // Define a larger sample size to have a "middle" to check
+    const uint32_t src_len_in_samps = 16;
+    const uint32_t dest_len_in_bytes = src_len_in_samps * 2 * 3; // 3 bytes per i24 sample
+
+    // Create source arrays and fill with incrementing values
+    q31_t src0[src_len_in_samps];
+    q31_t src1[src_len_in_samps];
+    for (uint32_t i = 0; i < src_len_in_samps; ++i)
+    {
+        src0[i] = (i << 24) | (i << 16) | (i << 8) | i;
+        src1[i] = ((i + 100) << 24) | ((i + 100) << 16) | ((i + 100) << 8) | (i + 100);
+    }
+
+    // Create destination array
+    uint8_t dest[dest_len_in_bytes] = {0};
+
+    // Call the function
+    uint32_t bytes_written = data_converters_interleave_2_q31_to_i24(src0, src1, dest, src_len_in_samps);
+
+    // Check the number of bytes written
+    ASSERT_EQ(bytes_written, dest_len_in_bytes);
+
+    // Check a sample in the middle
+    const uint32_t middle_sample = src_len_in_samps / 2;
+    const uint32_t middle_byte = middle_sample * 6; // 6 bytes per interleaved sample pair
+
+    // Check src0 middle sample
+    ASSERT_EQ(dest[middle_byte], static_cast<uint8_t>(src0[middle_sample] >> 24));
+    ASSERT_EQ(dest[middle_byte + 1], static_cast<uint8_t>(src0[middle_sample] >> 16));
+    ASSERT_EQ(dest[middle_byte + 2], static_cast<uint8_t>(src0[middle_sample] >> 8));
+
+    // Check src1 middle sample
+    ASSERT_EQ(dest[middle_byte + 3], static_cast<uint8_t>(src1[middle_sample] >> 24));
+    ASSERT_EQ(dest[middle_byte + 4], static_cast<uint8_t>(src1[middle_sample] >> 16));
+    ASSERT_EQ(dest[middle_byte + 5], static_cast<uint8_t>(src1[middle_sample] >> 8));
+
+    // Additional checks for surrounding samples
+    const uint32_t check_range = 2; // Check 2 samples before and after the middle
+    for (uint32_t i = middle_sample - check_range; i <= middle_sample + check_range; ++i)
+    {
+        uint32_t byte_index = i * 6;
+        ASSERT_EQ(dest[byte_index], static_cast<uint8_t>(src0[i] >> 24))
+            << "Mismatch in src0 at sample " << i << ", byte 0";
+        ASSERT_EQ(dest[byte_index + 1], static_cast<uint8_t>(src0[i] >> 16))
+            << "Mismatch in src0 at sample " << i << ", byte 1";
+        ASSERT_EQ(dest[byte_index + 2], static_cast<uint8_t>(src0[i] >> 8))
+            << "Mismatch in src0 at sample " << i << ", byte 2";
+        ASSERT_EQ(dest[byte_index + 3], static_cast<uint8_t>(src1[i] >> 24))
+            << "Mismatch in src1 at sample " << i << ", byte 0";
+        ASSERT_EQ(dest[byte_index + 4], static_cast<uint8_t>(src1[i] >> 16))
+            << "Mismatch in src1 at sample " << i << ", byte 1";
+        ASSERT_EQ(dest[byte_index + 5], static_cast<uint8_t>(src1[i] >> 8))
+            << "Mismatch in src1 at sample " << i << ", byte 2";
+    }
 }
 
 TEST(DataConvertersTest, data_converters_interleave_2_q31_to_i24_should_not_go_past_array_end)
 {
-    FAIL() << "TODO write tests for this function";
+    // Define source arrays with extra elements that should not be processed
+    const uint32_t src_len_in_samps = 4;
+    const uint32_t extra_samples = 2;
+    const uint32_t total_src_len = src_len_in_samps + extra_samples;
+
+    q31_t src0[total_src_len] = {
+        0x11223344, 0x55667788, 0x99AABBCC, 0xDDEEFF00,
+        0xDEADBEEF, 0xCAFEBABE // Extra samples that should not be processed
+    };
+    q31_t src1[total_src_len] = {
+        0xAABBCCDD, 0xEEFF0011, 0x22334455, 0x66778899,
+        0xFEEDFACE, 0xC0FFEE00 // Extra samples that should not be processed
+    };
+
+    // Create destination array with extra space
+    const uint32_t dest_len_in_bytes = src_len_in_samps * 2 * 3; // 3 bytes per i24 sample
+    const uint32_t dest_extra_space = 6;
+    const uint32_t total_dest_len = dest_len_in_bytes + dest_extra_space;
+    uint8_t dest[total_dest_len];
+
+    // Initialize destination array with a known pattern
+    for (uint32_t i = 0; i < total_dest_len; ++i)
+    {
+        dest[i] = 0xAA;
+    }
+
+    // Call the function with the specified length
+    uint32_t bytes_written = data_converters_interleave_2_q31_to_i24(src0, src1, dest, src_len_in_samps);
+
+    // Check the number of bytes written
+    ASSERT_EQ(bytes_written, dest_len_in_bytes);
+
+    // Check that the function did not write past the expected end of the destination array
+    for (uint32_t i = dest_len_in_bytes; i < total_dest_len; ++i)
+    {
+        ASSERT_EQ(dest[i], 0xAA) << "Unexpected value at index " << i;
+    }
+
+    // Check that the function did not read past the end of the source arrays
+    ASSERT_EQ(src0[src_len_in_samps], 0xDEADBEEF) << "Source array 0 was modified unexpectedly";
+    ASSERT_EQ(src1[src_len_in_samps], 0xFEEDFACE) << "Source array 1 was modified unexpectedly";
 }
