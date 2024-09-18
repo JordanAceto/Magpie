@@ -27,7 +27,7 @@ const mxc_gpio_cfg_t afe_ch0_enable_pin = {
     .mask = MXC_GPIO_PIN_11,
     .pad = MXC_GPIO_PAD_NONE,
     .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
+    .vssel = MXC_GPIO_VSSEL_VDDIOH,
     .drvstr = MXC_GPIO_DRVSTR_0,
 };
 
@@ -36,7 +36,7 @@ const mxc_gpio_cfg_t afe_ch1_enable_pin = {
     .mask = MXC_GPIO_PIN_12,
     .pad = MXC_GPIO_PAD_NONE,
     .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
+    .vssel = MXC_GPIO_VSSEL_VDDIOH,
     .drvstr = MXC_GPIO_DRVSTR_0,
 };
 
