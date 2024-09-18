@@ -36,6 +36,22 @@
 int Board_Init(void);
 
 /**
+ * @brief `bsp_power_on_LDOs()` powers on all LDOs and regulators on the board. This function only controls the LDOs,
+ * individual peripherals may still be powered off. Peripherals are power on and off by their respective drivers.
+ *
+ * @post the LDOs are powered on.
+ */
+void bsp_power_on_LDOs();
+
+/**
+ * @brief `bsp_power_off_LDOs()` powers off all LDOs and regulators on the board. Power to the main microcontroller
+ * remains on.
+ *
+ * @post the LDOs are powered off.
+ */
+void bsp_power_off_LDOs();
+
+/**
  * @brief `gpio_write_pin(p, s)` writes GPIO pin `p` to state `s`, true for pin HIGH and false for pin LOW.
  *
  * @pre pin `p` is configured as a GPIO output.
