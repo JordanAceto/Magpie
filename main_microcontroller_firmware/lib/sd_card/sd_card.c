@@ -1,13 +1,15 @@
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
-#include "mxc_delay.h"
-#include "sd_card.h"
-#include "sdhc_lib.h"
-#include "sdhc_regs.h"
 #include <stddef.h> // for NULL
 
+#include "mxc_delay.h"
 #include "mxc_device.h"
+#include "sdhc_lib.h"
+#include "sdhc_regs.h"
+
+#include "bsp_sdhc.h"
+#include "sd_card.h"
 
 /* Private defines ---------------------------------------------------------------------------------------------------*/
 
@@ -29,13 +31,7 @@ static char volume = '0';
 
 SD_Card_Error_t sd_card_init()
 {
-    const mxc_sdhc_cfg_t sdhc_cfg = {
-        .bus_voltage = MXC_SDHC_Bus_Voltage_3_3,
-        .block_gap = SDHC_CONFIG_BLOCK_GAP,
-        .clk_div = SDHC_CONFIG_CLK_DIV,
-    };
-
-    if (MXC_SDHC_Init(&sdhc_cfg) != E_NO_ERROR)
+    if (bsp_sdhc_init() != E_NO_ERROR)
     {
         return SD_CARD_INIT_ERROR;
     }
