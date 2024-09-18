@@ -5,11 +5,15 @@
  *
  * Because of this we need to make sure that initializing an de-initializing the SDHC does not overwrite the pin config
  * for P1.6. We need to read the pin config for P1.6, stash it, and then reconfigure P1.6 when we're done configuring
- * the SDHC peripheral. This remains as a TODO.
+ * the SDHC peripheral.
+ *
+ * This will result in a brief glitch on P1.6, but this won't affect any critical functionality, as this is the ADC
+ * chip select enable pin, and the ADC should not be converting before the SD card is initialized and ready.
  */
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
+#include "board.h"
 #include "bsp_sdhc.h"
 #include "sdhc_lib.h"
 
@@ -22,9 +26,20 @@
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-int bsp_sdhs_init()
+int bsp_sdhc_init()
 {
-    // TODO: get the configuration state of P1.6 and save it so we can re-init that pin
+    // because of this issue: https://github.com/analogdevicesinc/msdk/issues/1161 the SDHC lib overwrites the pin
+    // P1.6, which is used to control the AD4630's chip select line. We need to save the old state of this pin and
+    // restore it after initializing the SDHC.
+    const mxc_gpio_cfg_t adc_pin_that_gets_overwritten = {
+        .port = MXC_GPIO1,
+        .mask = MXC_GPIO_PIN_6,
+        .pad = MXC_GPIO_PAD_NONE,
+        .func = MXC_GPIO_FUNC_OUT,
+        .vssel = MXC_GPIO_VSSEL_VDDIO,
+        .drvstr = MXC_GPIO_DRVSTR_0,
+    };
+    const bool old_adc_pin_state = gpio_read_pin(&adc_pin_that_gets_overwritten);
 
     const mxc_gpio_cfg_t sdhc_pins = {
         .port = MXC_GPIO1,
@@ -48,15 +63,20 @@ int bsp_sdhs_init()
 
     if ((res = MXC_SDHC_Init(&sdhc_cfg)) != E_NO_ERROR)
     {
+        // restore the config and old state of P1.6 in case of SDHC init failure
+        MXC_GPIO_Config(&adc_pin_that_gets_overwritten);
+        gpio_write_pin(&adc_pin_that_gets_overwritten, old_adc_pin_state);
         return res;
     }
 
-    // TODO: re-init P1.6 with the saved config from above
+    // restore the config and old state of P1.6
+    MXC_GPIO_Config(&adc_pin_that_gets_overwritten);
+    gpio_write_pin(&adc_pin_that_gets_overwritten, old_adc_pin_state);
 
     return E_NO_ERROR;
 }
 
-int bsp_sdhs_deinit()
+int bsp_sdhc_deinit()
 {
     const mxc_gpio_cfg_t sdhc_pins = {
         .port = MXC_GPIO1,
@@ -69,8 +89,6 @@ int bsp_sdhs_deinit()
     MXC_GPIO_Config(&sdhc_pins);
 
     MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_SDHC);
-
-    // TODO: make sure that the SDHC shutdown doesn't mess with pin P1.6
 
     return MXC_SDHC_Shutdown();
 }

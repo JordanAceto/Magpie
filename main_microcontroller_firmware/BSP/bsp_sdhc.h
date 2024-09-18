@@ -19,15 +19,15 @@
  *
  * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-int bsp_sdhs_init();
+int bsp_sdhc_init();
 
 /**
  * @brief `bsp_sdhc_deinit()` de-initializes the SDHC bus and sets the associated pins to high-Z.
  *
- * @post the SDHC bus is de-initialized . The GPIO pins associated with the bus are hig-Z.
+ * @post the SDHC bus is de-initialized. The GPIO pins associated with the bus are high-Z.
  *
  * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-int bsp_sdhs_deinit();
+int bsp_sdhc_deinit();
 
 #endif
