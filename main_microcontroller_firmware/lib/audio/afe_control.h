@@ -2,10 +2,12 @@
  * @file      afe_gain_ctl.h
  * @brief     A software module for controlling the Analog Front End (AFE) is represented here.
  * @details   The gain is set by switching resistors in a differential opamp circuit. Eight discrete gain settings are
- * available. AFE channels are enabled and disabled via load switches controlled by GPIO pins.
+ * available. AFE channels are enabled and disabled via load switches controlled by GPIO pins and an I2C controlled
+ * load switch.
  *
  * This module requires:
  * - Shared use of I2C0 using 7-bit addresses 0x4E and 0x4F
+ * - Shared use of I2C1 using 7-bit address 0x71
  * - Exclusive use of P0.11 and P0.12
  */
 
@@ -19,8 +21,8 @@
  */
 typedef enum
 {
-    AFE_CONTROL_CHANNEL_0 = 0x4Fu, // the values here represent the gain MUX I2C addresses
-    AFE_CONTROL_CHANNEL_1 = 0x4Eu,
+    AFE_CONTROL_CHANNEL_0 = 0,
+    AFE_CONTROL_CHANNEL_1,
 } AFE_Control_Channel_t;
 
 /**
@@ -56,11 +58,14 @@ typedef enum
 /**
  * @brief `afe_control_init()` initializes the AFE gain control circuitry.
  *
- * @pre the I2C bus on the 1.8V domain is configured as an I2C master and has pullup resistors to 1.8V.
+ * @pre the I2C busses on the 1.8V and 3.3V domain are configured as I2C masters and have pullup resistors to 1.8V
+ * and 3.3V respectively.
  *
  * @post the AFE gain control is initialized and ready to use.
+ *
+ * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
  */
-void afe_control_init();
+AFE_Control_Error_t afe_control_init();
 
 /**
  * @brief `afe_control_enable(c)` enables AFE channel `c`, powering it on.
@@ -71,7 +76,7 @@ void afe_control_init();
  *
  * @post the given channel is powered on.
  */
-void afe_control_enable(AFE_Control_Channel_t channel);
+AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel);
 
 /**
  * @brief `afe_control_disable(c)` disables AFE channel `c`, powering it off.
@@ -82,7 +87,7 @@ void afe_control_enable(AFE_Control_Channel_t channel);
  *
  * @post the given channel is powered off.
  */
-void afe_control_disable(AFE_Control_Channel_t channel);
+AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel);
 
 /**
  * @brief `afe_control_channel_is_enabled(c)` is true iff AFE channel `c` is enabled.

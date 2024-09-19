@@ -1,18 +1,30 @@
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
 #include <stddef.h> // for NULL
+#include <stdbool.h>
 
 #include "mxc_device.h"
 
 #include "afe_control.h"
+#include "board.h"
 #include "bsp_i2c.h"
 
 /* Private defines ---------------------------------------------------------------------------------------------------*/
+
+#define MAX14662_CH0_7_BIT_I2C_ADDRESS (0x4Fu)
+#define MAX14662_CH1_7_BIT_I2C_ADDRESS (0x4Eu)
 
 #define MAX14662_TX_BUFF_LEN (2u)
 #define MAX14662_RX_BUFF_LEN (1u)
 
 #define MAX14662_DUMMY_REGISTER (0x00u)
+
+#define TPS22994_7_BIT_I2C_ADDRESS (0x71u)
+
+#define TPS22994_CTL_REGISTER_ADDRESS (0x05u)
+
+// mask to select I2C control for channels 0 and 1 instead of GPIO control
+#define TPS22994_I2C_CTL_MASK (0x30)
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 
@@ -38,55 +50,115 @@ const mxc_gpio_cfg_t afe_ch1_enable_pin = {
     .drvstr = MXC_GPIO_DRVSTR_0,
 };
 
+static bool channel_0_is_enabled = false;
+static bool channel_1_is_enabled = false;
+
+/* Private function declarations -------------------------------------------------------------------------------------*/
+
+/**
+ * @brief Configures the TPS22994 to control the AFE channels over I2C.
+ *
+ * @pre the I2C bus on the 3.3V domain is configured as an I2C master and has pullup resistors to 3.3V.
+ *
+ * @post the TPS22994 is configured to control the AFE channels over I2C instead of via GPIO pins.
+ *
+ * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
+ */
+AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control();
+
+/**
+ * @brief Sets the channels to be enabled on the TPS22994.
+ *
+ * @pre `tps22994_configure_ch0_and_ch1_for_i2c_control()` has been called with all its preconditions met.
+ *
+ * @param ch0 whether to enable channel 0
+ *
+ * @param ch1 whether to enable channel 1
+ *
+ * @post channels 0 and/or 1 are enabled or disabled according to the inputs.
+ *
+ * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
+ */
+AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1);
+
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-void afe_control_init(mxc_i2c_regs_t *hi2c)
+AFE_Control_Error_t afe_control_init()
 {
     MXC_GPIO_Config(&afe_ch0_enable_pin);
     MXC_GPIO_Config(&afe_ch1_enable_pin);
+
+    if (tps22994_configure_ch0_and_ch1_for_i2c_control() != AFE_CONTROL_ERROR_ALL_OK)
+    {
+        return AFE_CONTROL_ERROR_I2C_ERROR;
+    }
+
+    afe_control_disable(AFE_CONTROL_CHANNEL_0);
+    afe_control_disable(AFE_CONTROL_CHANNEL_1);
+
+    return AFE_CONTROL_ERROR_ALL_OK;
 }
 
-void afe_control_enable(AFE_Control_Channel_t channel)
+AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel)
 {
-    switch (channel)
+    // first power on the opamps and common mode ref via load switches controlled by GPIO pins
+    if (channel == AFE_CONTROL_CHANNEL_0)
     {
-    case AFE_CONTROL_CHANNEL_0:
-        MXC_GPIO_OutSet(afe_ch0_enable_pin.port, afe_ch0_enable_pin.mask);
-        break;
-    case AFE_CONTROL_CHANNEL_1:
-        MXC_GPIO_OutSet(afe_ch1_enable_pin.port, afe_ch1_enable_pin.mask);
-        break;
-    default:
-        break;
+        channel_0_is_enabled = true;
+        gpio_write_pin(&afe_ch0_enable_pin, true);
     }
+    else if (channel == AFE_CONTROL_CHANNEL_1)
+    {
+        channel_1_is_enabled = true;
+        gpio_write_pin(&afe_ch1_enable_pin, true);
+    }
+
+    // then power on the MEMs microphones via the I2C controlled load switches
+    return tps22994_set_channels(channel_0_is_enabled, channel_1_is_enabled);
 }
 
-void afe_control_disable(AFE_Control_Channel_t channel)
+AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel)
 {
-    switch (channel)
+    if (channel == AFE_CONTROL_CHANNEL_0)
     {
-    case AFE_CONTROL_CHANNEL_0:
-        MXC_GPIO_OutClr(afe_ch0_enable_pin.port, afe_ch0_enable_pin.mask);
-        break;
-    case AFE_CONTROL_CHANNEL_1:
-        MXC_GPIO_OutClr(afe_ch1_enable_pin.port, afe_ch1_enable_pin.mask);
-        break;
-    default:
-        break;
+        channel_0_is_enabled = false;
     }
+    else if (channel == AFE_CONTROL_CHANNEL_1)
+    {
+        channel_1_is_enabled = false;
+    }
+
+    // first power off the MEMs microphones via the I2C controlled load switches
+    if (tps22994_set_channels(channel_0_is_enabled, channel_1_is_enabled) != 0)
+    {
+        return AFE_CONTROL_ERROR_I2C_ERROR;
+    }
+
+    // then power off the opamps and common mode ref via load switches controlled by GPIO pins
+    if (channel == AFE_CONTROL_CHANNEL_0)
+    {
+        gpio_write_pin(&afe_ch0_enable_pin, false);
+    }
+    else if (channel == AFE_CONTROL_CHANNEL_1)
+    {
+        gpio_write_pin(&afe_ch1_enable_pin, false);
+    }
+
+    return AFE_CONTROL_ERROR_ALL_OK;
 }
 
 bool afe_control_channel_is_enabled(AFE_Control_Channel_t channel)
 {
-    switch (channel)
+    if (channel == AFE_CONTROL_CHANNEL_0)
     {
-    case AFE_CONTROL_CHANNEL_0:
-        return MXC_GPIO_InGet(afe_ch0_enable_pin.port, afe_ch0_enable_pin.mask);
-    case AFE_CONTROL_CHANNEL_1:
-        return MXC_GPIO_InGet(afe_ch1_enable_pin.port, afe_ch1_enable_pin.mask);
-    default:
-        return false;
+        return channel_0_is_enabled;
     }
+    else if (channel == AFE_CONTROL_CHANNEL_1)
+    {
+        return channel_1_is_enabled;
+    }
+
+    return false;
 }
 
 AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Control_Gain_t gain)
@@ -100,9 +172,11 @@ AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Cont
     tx_buff[0] = MAX14662_DUMMY_REGISTER;
     tx_buff[1] = gain;
 
+    const uint8_t address = channel == AFE_CONTROL_CHANNEL_0 ? MAX14662_CH0_7_BIT_I2C_ADDRESS : MAX14662_CH1_7_BIT_I2C_ADDRESS;
+
     mxc_i2c_req_t req = {
         .i2c = BSP_I2C_1V8_BUS_HANDLE,
-        .addr = channel,
+        .addr = address,
         .tx_buf = tx_buff,
         .tx_len = MAX14662_TX_BUFF_LEN,
         .rx_buf = NULL,
@@ -123,9 +197,11 @@ AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
         return AFE_CONTROL_GAIN_UNDEFINED;
     }
 
+    const uint8_t address = channel == AFE_CONTROL_CHANNEL_0 ? MAX14662_CH0_7_BIT_I2C_ADDRESS : MAX14662_CH1_7_BIT_I2C_ADDRESS;
+
     mxc_i2c_req_t req = {
         .i2c = BSP_I2C_1V8_BUS_HANDLE,
-        .addr = channel,
+        .addr = address,
         .tx_buf = NULL,
         .tx_len = 0,
         .rx_buf = rx_buff,
@@ -155,4 +231,55 @@ AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
     default:
         return AFE_CONTROL_GAIN_UNDEFINED;
     }
+}
+
+/* Private function definitions --------------------------------------------------------------------------------------*/
+
+AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control()
+{
+    tx_buff[0] = TPS22994_CTL_REGISTER_ADDRESS;
+    tx_buff[1] = TPS22994_I2C_CTL_MASK;
+
+    mxc_i2c_req_t req = {
+        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .addr = TPS22994_7_BIT_I2C_ADDRESS,
+        .tx_buf = tx_buff,
+        .tx_len = 2,
+        .rx_buf = NULL,
+        .rx_len = 0,
+        .restart = 0,
+        .callback = NULL,
+    };
+
+    if (MXC_I2C_MasterTransaction(&req) != 0)
+    {
+        return AFE_CONTROL_ERROR_I2C_ERROR;
+    }
+
+    return AFE_CONTROL_ERROR_ALL_OK;
+}
+
+AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1)
+{
+    // turn on any enabled channels
+    tx_buff[0] = TPS22994_CTL_REGISTER_ADDRESS;
+    tx_buff[1] = TPS22994_I2C_CTL_MASK | (channel_1_is_enabled << 1) | (channel_0_is_enabled);
+
+    mxc_i2c_req_t req = {
+        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .addr = TPS22994_7_BIT_I2C_ADDRESS,
+        .tx_buf = tx_buff,
+        .tx_len = 2,
+        .rx_buf = NULL,
+        .rx_len = 0,
+        .restart = 0,
+        .callback = NULL,
+    };
+
+    if (MXC_I2C_MasterTransaction(&req) != 0)
+    {
+        return AFE_CONTROL_ERROR_I2C_ERROR;
+    }
+
+    return AFE_CONTROL_ERROR_ALL_OK;
 }
