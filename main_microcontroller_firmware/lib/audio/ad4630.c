@@ -295,14 +295,14 @@ AD4630_Error_t ad4630_init()
 void ad4630_cont_conversions_start()
 {
     gpio_write_pin(&adc_clk_en_pin, true);
-    gpio_write_pin(&adc_clock_master_reset_pin, true);
+    gpio_write_pin(&adc_clock_master_reset_pin, false);
     gpio_write_pin(&adc_chip_select_disable_pin, false);
 }
 
 void ad4630_cont_conversions_stop()
 {
     gpio_write_pin(&adc_clk_en_pin, false);
-    gpio_write_pin(&adc_clock_master_reset_pin, false);
+    gpio_write_pin(&adc_clock_master_reset_pin, true);
     gpio_write_pin(&adc_chip_select_disable_pin, true);
 }
 
