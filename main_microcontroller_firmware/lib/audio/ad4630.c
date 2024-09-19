@@ -2,6 +2,7 @@
 
 #include "ad4630.h"
 #include "board.h"
+#include "bsp_spi.h"
 #include "dma.h"
 #include "dma_regs.h"
 #include "mxc_delay.h"
@@ -13,10 +14,6 @@
 #include <stddef.h> // for NULL
 
 /* Private defines ---------------------------------------------------------------------------------------------------*/
-
-// we use two SPI busses for the ADC, one to configure the ADC, and one to read the audio data from the ADC
-#define CONFIG_SPI_BUS (MXC_SPI2)
-#define DATA_SPI_BUS (MXC_SPI1)
 
 // some operations require a dummy read
 #define AD4630_REG_READ_DUMMY (0x00)
@@ -82,7 +79,7 @@ static mxc_gpio_cfg_t config_spi_cs_pin = {
     .port = MXC_GPIO0,
     .mask = MXC_GPIO_PIN_16,
     .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
+    .func = MXC_GPIO_FUNC_OUT, // we'll change this later to high-Z so it doesn't interfere with the other SPI buses
     .vssel = MXC_GPIO_VSSEL_VDDIO,
     .drvstr = MXC_GPIO_DRVSTR_3,
 };
@@ -112,6 +109,30 @@ static const mxc_gpio_cfg_t adc_n_reset_pin = {
 };
 
 /**
+ * Pin to hold the ADC clock generator in reset. Set LOW to hold the clock generator in reset.
+ */
+static const mxc_gpio_cfg_t adc_clock_master_reset_pin = {
+    .port = MXC_GPIO0,
+    .mask = MXC_GPIO_PIN_22,
+    .pad = MXC_GPIO_PAD_NONE,
+    .func = MXC_GPIO_FUNC_OUT,
+    .vssel = MXC_GPIO_VSSEL_VDDIO,
+    .drvstr = MXC_GPIO_DRVSTR_0,
+};
+
+/**
+ * Pin to enable the chip select line from the ADC to the SPI bus. LOW to enable, HIGH to disable.
+ */
+static const mxc_gpio_cfg_t adc_chip_select_disable_pin = {
+    .port = MXC_GPIO1,
+    .mask = MXC_GPIO_PIN_6,
+    .pad = MXC_GPIO_PAD_NONE,
+    .func = MXC_GPIO_FUNC_OUT,
+    .vssel = MXC_GPIO_VSSEL_VDDIO,
+    .drvstr = MXC_GPIO_DRVSTR_0,
+};
+
+/**
  * Buffers for writing and reading from the two SPI busses
  */
 static uint8_t cfg_spi_tx_buff[CONFIG_SPI_TX_BUFF_LEN_IN_BYTES];
@@ -122,7 +143,7 @@ static uint8_t data_spi_rx_buff[DATA_SPI_RX_BUFF_LEN_IN_BYTES];
  * SPI request structure for the configuration SPI, used to initialize and set up the ADC
  */
 static mxc_spi_req_t cfg_spi_req = {
-    .spi = CONFIG_SPI_BUS,
+    .spi = BSP_ADC_CONFIG_SPI_HANDLE,
     .txData = cfg_spi_tx_buff,
     .rxData = cfg_spi_rx_buff,
     .txLen = CONFIG_SPI_TX_BUFF_LEN_IN_BYTES,
@@ -186,57 +207,85 @@ static AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out);
  */
 static AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val);
 
-/**
- * `initialize_ad4630_with_config_spi()` initializes the configuration SPI bus and writes to AD4630 registers to
- * configure the ADC
- *
- * @pre ADC initialization is complete
- *
- * @post the ADC is configured by the config SPI bus, but the data SPI bus is not yet set to slave mode
- *
- * @retval `AD4630_ERROR_ALL_OK` if successful, else an error code
- */
-static AD4630_Error_t initialize_ad4630_with_config_spi();
-
-/**
- * `set_data_spi_to_slave_mode()` sets the audio data SPI bus to slave mode, getting it ready to receive samples
- *
- * @pre `initialize_ad4630_with_config_spi()` has been called
- *
- * @post the SPI bus responsible for recieving audio samples is set to slave mode and ready to receive data
- *
- * @retval `AD4630_ERROR_ALL_OK` if successful, else an error code
- */
-static AD4630_Error_t set_data_spi_to_slave_mode();
-
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
 AD4630_Error_t ad4630_init()
 {
-    MXC_GPIO_Config(&adc_clk_en_pin);
+    // configure all the GPIO pins needed for the ADC
     MXC_GPIO_Config(&config_spi_cs_pin);
+    MXC_GPIO_Config(&adc_clk_en_pin);
+    MXC_GPIO_Config(&adc_n_reset_pin);
+    MXC_GPIO_Config(&adc_clock_master_reset_pin);
+    MXC_GPIO_Config(&adc_chip_select_disable_pin);
 
     // the reset pin must be high or the ADC will be stuck in reset
-    MXC_GPIO_Config(&adc_n_reset_pin);
     gpio_write_pin(&adc_n_reset_pin, true);
 
     ad4630_cont_conversions_stop();
 
-    if (initialize_ad4630_with_config_spi() != AD4630_ERROR_ALL_OK)
+    // use the config SPI to initialize the ADC
+    if (bsp_adc_config_spi_init() != E_NO_ERROR)
     {
         return AD4630_ERROR_CONFIG_ERROR;
     }
 
-    // turn on the ADC clock so that we can config the SPI which need this clock
+    if (ad4630_begin_register_access_mode() != AD4630_ERROR_ALL_OK)
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+    if (ad4630_write_reg(AD4630_REG_OSCILLATOR, AD4630_OSCILLATOR_FLAG_OSC_DIV_BY_4) != AD4630_ERROR_ALL_OK)
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+    if (ad4630_write_reg(AD4630_REG_MODES, AD4630_MODES_FLAG_CLK_MD_HOST_CLK_MODE) != AD4630_ERROR_ALL_OK)
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+    if (ad4630_end_register_access_mode() != AD4630_ERROR_ALL_OK)
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+
+    // set the config CS pin back to high-Z so that it doesn't interfere with the data CS pin
+    config_spi_cs_pin.func = MXC_GPIO_FUNC_IN;
+    MXC_GPIO_Config(&config_spi_cs_pin);
+
+    if (bsp_adc_config_spi_deinit() != E_NO_ERROR) // we don't need the config SPI anymore
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+
+    // turn on the ADC clock so that we can config the data SPI which need this clock
     ad4630_cont_conversions_start();
 
-    if (set_data_spi_to_slave_mode() != AD4630_ERROR_ALL_OK)
+    if (bsp_adc_ch0_data_spi_init() != E_NO_ERROR)
     {
         return AD4630_ERROR_CONFIG_ERROR;
     }
 
-    // we need to re-initialize the clock enable pin, because the config is overwritten when we init SPI1
-    MXC_GPIO_Config(&adc_clk_en_pin);
+    // complete the init; don't use the data!
+    mxc_spi_req_t data_spi_req = {
+        .spi = BSP_ADC_CH0_DATA_SPI_HANDLE,
+        .txData = NULL,
+        .rxData = data_spi_rx_buff,
+        .txLen = 0,
+        .rxLen = DATA_SPI_RX_BUFF_LEN_IN_BYTES,
+        .ssIdx = 0,
+        .ssDeassert = 1,
+        .txCnt = 0,
+        .rxCnt = 0,
+        .completeCB = NULL,
+    };
+    if (MXC_SPI_SlaveTransactionAsync(&data_spi_req) != E_NO_ERROR)
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+
+    // disable the port
+    BSP_ADC_CH0_DATA_SPI_HANDLE->ctrl0 &= ~(MXC_F_SPI_CTRL0_EN);
+
+    // clear the fifo, start only on pos edge of Slave-sel-B
+    MXC_SPI_ClearRXFIFO(BSP_ADC_CH0_DATA_SPI_HANDLE);
 
     ad4630_cont_conversions_stop();
 
@@ -246,11 +295,15 @@ AD4630_Error_t ad4630_init()
 void ad4630_cont_conversions_start()
 {
     gpio_write_pin(&adc_clk_en_pin, true);
+    gpio_write_pin(&adc_clock_master_reset_pin, true);
+    gpio_write_pin(&adc_chip_select_disable_pin, false);
 }
 
 void ad4630_cont_conversions_stop()
 {
     gpio_write_pin(&adc_clk_en_pin, false);
+    gpio_write_pin(&adc_clock_master_reset_pin, false);
+    gpio_write_pin(&adc_chip_select_disable_pin, true);
 }
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
@@ -306,118 +359,4 @@ AD4630_Error_t ad4630_begin_register_access_mode()
 AD4630_Error_t ad4630_end_register_access_mode()
 {
     return ad4630_write_reg(AD4630_REG_EXIT_CFG_MD, AD4630_EXIT_CONFIG_MODE_FLAG_EXIT);
-}
-
-AD4630_Error_t initialize_ad4630_with_config_spi()
-{
-    // chip select high to start
-    gpio_write_pin(&config_spi_cs_pin, true);
-
-    // set up SPI2 to perform ADC initialization
-    const uint32_t CFG_SPI_CLK_FREQ_Hz = 5000000;
-    if (MXC_SPI_Init(
-            CONFIG_SPI_BUS,
-            1, // 1 -> master mode
-            0, // 0 -> quad mode not used, single bit SPI
-            1, // num slaves
-            0, // CS polarity (0 for active low)
-            CFG_SPI_CLK_FREQ_Hz,
-            MAP_A) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (MXC_SPI_SetDataSize(CONFIG_SPI_BUS, 8) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (MXC_SPI_SetWidth(CONFIG_SPI_BUS, SPI_WIDTH_STANDARD) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (MXC_SPI_SetMode(CONFIG_SPI_BUS, SPI_MODE_0) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    // use SPI2 to initialize the ADC
-    if (ad4630_begin_register_access_mode() != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (ad4630_write_reg(AD4630_REG_OSCILLATOR, AD4630_OSCILLATOR_FLAG_OSC_DIV_BY_4) != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (ad4630_write_reg(AD4630_REG_MODES, AD4630_MODES_FLAG_CLK_MD_HOST_CLK_MODE) != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (ad4630_end_register_access_mode() != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    // we no longer need SPI2 for the ADC, set the chip sel line as high-Z
-    MXC_SPI_Shutdown(CONFIG_SPI_BUS);
-    config_spi_cs_pin.func = MXC_GPIO_FUNC_IN;
-    MXC_GPIO_Config(&config_spi_cs_pin);
-
-    return AD4630_ERROR_ALL_OK;
-}
-
-AD4630_Error_t set_data_spi_to_slave_mode()
-{
-    if (MXC_SPI_Init(
-            DATA_SPI_BUS,
-            0, // 0 -> slave mode
-            0, // 0 -> quad mode not used, single bit SPI
-            0, // num slaves, none
-            0, // CS polarity (0 for active low)
-            0, // freq is defined by the driving clock
-            MAP_A) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    // TODO: this call returns an error. It does in Bob's code too, but it is not handled there.
-    // Do we even need to set the data size to 8 bits?
-    if (MXC_SPI_SetDataSize(DATA_SPI_BUS, 8) != E_NO_ERROR)
-    {
-        //        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    if (MXC_SPI_SetWidth(DATA_SPI_BUS, SPI_WIDTH_3WIRE) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (MXC_SPI_SetMode(DATA_SPI_BUS, SPI_MODE_1) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    // complete the init; don't use the data!
-    mxc_spi_req_t data_spi_req = {
-        .spi = DATA_SPI_BUS,
-        .txData = NULL,
-        .rxData = data_spi_rx_buff,
-        .txLen = 0,
-        .rxLen = DATA_SPI_RX_BUFF_LEN_IN_BYTES,
-        .ssIdx = 0,
-        .ssDeassert = 1,
-        .txCnt = 0,
-        .rxCnt = 0,
-        .completeCB = NULL,
-    };
-    if (MXC_SPI_SlaveTransactionAsync(&data_spi_req) != E_NO_ERROR)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    // disable the port
-    DATA_SPI_BUS->ctrl0 &= ~(MXC_F_SPI_CTRL0_EN);
-
-    // clear the fifo, start only on pos edge of Slave-sel-B
-    MXC_SPI_ClearRXFIFO(DATA_SPI_BUS);
-
-    return AD4630_ERROR_ALL_OK;
 }
