@@ -1,3 +1,12 @@
+/**
+ * NOTE: On the FTC spin the I2C0 pullups are tied to VREGO_A which is an intrnally generated 1.8V source. VREGO_A is
+ * always enabled, but the downstream devices can be powered on and off via LDO enable pins and load switches. This
+ * means that the downstream devices will see 1.8V through the pullup resistors even when they are powered off.
+ *
+ * To avoid violating the voltage levels of the downstream devices when they are powered down, we drive the two pins
+ * for I2C0 low when the devices are powered down. This wastes a small amount of power in the resistors. In the next
+ * spin we can avoid this issue by tying the pullups to the normal 1.8V rail.
+ */
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
@@ -41,11 +50,13 @@ int bsp_1V8_i2c_deinit()
         .port = MXC_GPIO0,
         .mask = (MXC_GPIO_PIN_6 | MXC_GPIO_PIN_7),
         .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
+        .func = MXC_GPIO_FUNC_OUT, // this is a workaround to avoid violating downstream devices
         .vssel = MXC_GPIO_VSSEL_VDDIO,
         .drvstr = MXC_GPIO_DRVSTR_0,
     };
     MXC_GPIO_Config(&i2c0_pins);
+    // drive the pins low to avoid violating downstream devices, we can remove this when we move to the next spin
+    gpio_write_pin(&i2c0_pins, false);
 
     MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_I2C0);
 
