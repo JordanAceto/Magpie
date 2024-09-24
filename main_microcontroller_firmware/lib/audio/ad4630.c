@@ -73,66 +73,6 @@ typedef enum
 /* Private variables -------------------------------------------------------------------------------------------------*/
 
 /**
- * Chip select pin for config SPI, shorted to the ADC busy pin. Used as the chip select for the config SPI, then set to hi-Z
- */
-static mxc_gpio_cfg_t config_spi_cs_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_16,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT, // we'll change this later to high-Z so it doesn't interfere with the other SPI buses
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
-    .drvstr = MXC_GPIO_DRVSTR_3,
-};
-
-/**
- * Pin to enable and disable the ADC clock generation, HIGH to enable, LOW to disable
- */
-static const mxc_gpio_cfg_t adc_clk_en_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_20,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
-/**
- * Pin to force a reset of the ADC. To reset, pull LOW, then HIGH. Must be HIGH when ADC is in use.
- */
-static const mxc_gpio_cfg_t adc_n_reset_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_21,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
-/**
- * Pin to hold the ADC clock generator in reset. Set LOW to hold the clock generator in reset.
- */
-static const mxc_gpio_cfg_t adc_clock_master_reset_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_22,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
-/**
- * Pin to enable the chip select line from the ADC to the SPI bus. LOW to enable, HIGH to disable.
- */
-static const mxc_gpio_cfg_t adc_chip_select_disable_pin = {
-    .port = MXC_GPIO1,
-    .mask = MXC_GPIO_PIN_6,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
-/**
  * Buffers for writing and reading from the two SPI busses
  */
 static uint8_t cfg_spi_tx_buff[CONFIG_SPI_TX_BUFF_LEN_IN_BYTES];
@@ -143,7 +83,7 @@ static uint8_t data_spi_rx_buff[DATA_SPI_RX_BUFF_LEN_IN_BYTES];
  * SPI request structure for the configuration SPI, used to initialize and set up the ADC
  */
 static mxc_spi_req_t cfg_spi_req = {
-    .spi = BSP_ADC_CONFIG_SPI_HANDLE,
+    .spi = bsp_pins_adc_cfg_spi_handle,
     .txData = cfg_spi_tx_buff,
     .rxData = cfg_spi_rx_buff,
     .txLen = CONFIG_SPI_TX_BUFF_LEN_IN_BYTES,
@@ -212,14 +152,14 @@ static AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val);
 AD4630_Error_t ad4630_init()
 {
     // configure all the GPIO pins needed for the ADC
-    MXC_GPIO_Config(&config_spi_cs_pin);
-    MXC_GPIO_Config(&adc_clk_en_pin);
-    MXC_GPIO_Config(&adc_n_reset_pin);
-    MXC_GPIO_Config(&adc_clock_master_reset_pin);
-    MXC_GPIO_Config(&adc_chip_select_disable_pin);
+    MXC_GPIO_Config(&bsp_pins_adc_cfg_spi_cs_out_cfg);
+    MXC_GPIO_Config(&bsp_pins_adc_clk_en_cfg);
+    MXC_GPIO_Config(&bsp_pins_adc_n_reset_cfg);
+    MXC_GPIO_Config(&bsp_pins_adc_clk_master_reset_cfg);
+    MXC_GPIO_Config(&bsp_pins_adc_cs_disable_cfg);
 
     // the reset pin must be high or the ADC will be stuck in reset
-    gpio_write_pin(&adc_n_reset_pin, true);
+    gpio_write_pin(&bsp_pins_adc_n_reset_cfg, true);
 
     ad4630_cont_conversions_stop();
 
@@ -247,8 +187,7 @@ AD4630_Error_t ad4630_init()
     }
 
     // set the config CS pin back to high-Z so that it doesn't interfere with the data CS pin
-    config_spi_cs_pin.func = MXC_GPIO_FUNC_IN;
-    MXC_GPIO_Config(&config_spi_cs_pin);
+    MXC_GPIO_Config(&bsp_pins_adc_cfg_spi_cs_high_z_cfg);
 
     if (bsp_adc_config_spi_deinit() != E_NO_ERROR) // we don't need the config SPI anymore
     {
@@ -265,7 +204,7 @@ AD4630_Error_t ad4630_init()
 
     // complete the init; don't use the data!
     mxc_spi_req_t data_spi_req = {
-        .spi = BSP_ADC_CH0_DATA_SPI_HANDLE,
+        .spi = bsp_pins_adc_ch0_data_spi_handle,
         .txData = NULL,
         .rxData = data_spi_rx_buff,
         .txLen = 0,
@@ -285,7 +224,7 @@ AD4630_Error_t ad4630_init()
     BSP_ADC_CH0_DATA_SPI_HANDLE->ctrl0 &= ~(MXC_F_SPI_CTRL0_EN);
 
     // clear the fifo, start only on pos edge of Slave-sel-B
-    MXC_SPI_ClearRXFIFO(BSP_ADC_CH0_DATA_SPI_HANDLE);
+    MXC_SPI_ClearRXFIFO(bsp_pins_adc_ch0_data_spi_handle);
 
     ad4630_cont_conversions_stop();
 
@@ -294,16 +233,16 @@ AD4630_Error_t ad4630_init()
 
 void ad4630_cont_conversions_start()
 {
-    gpio_write_pin(&adc_clk_en_pin, true);
-    gpio_write_pin(&adc_clock_master_reset_pin, false);
-    gpio_write_pin(&adc_chip_select_disable_pin, false);
+    gpio_write_pin(&bsp_pins_adc_clk_en_cfg, true);
+    gpio_write_pin(&bsp_pins_adc_clock_master_reset_cfg, false);
+    gpio_write_pin(&bsp_pins_adc_chip_select_disable_pin, false);
 }
 
 void ad4630_cont_conversions_stop()
 {
-    gpio_write_pin(&adc_clk_en_pin, false);
-    gpio_write_pin(&adc_clock_master_reset_pin, true);
-    gpio_write_pin(&adc_chip_select_disable_pin, true);
+    gpio_write_pin(&bsp_pins_adc_clk_en_cfg, false);
+    gpio_write_pin(&bsp_pins_adc_clock_master_reset_cfg, true);
+    gpio_write_pin(&bsp_pins_adc_chip_select_disable_pin, true);
 }
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
@@ -314,7 +253,7 @@ AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out)
     cfg_spi_tx_buff[1] = (uint8_t)reg;
     cfg_spi_tx_buff[2] = AD4630_REG_READ_DUMMY; // the output data will end up here
 
-    gpio_write_pin(&config_spi_cs_pin, false);
+    gpio_write_pin(&bsp_pins_adc_cfg_spi_cs_out_cfg, false);
     MXC_Delay(4); // TODO are these delays necessary?
 
     if (MXC_SPI_MasterTransaction(&cfg_spi_req) != E_NO_ERROR)
@@ -322,7 +261,7 @@ AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out)
         return AD4630_ERROR_CONFIG_ERROR;
     }
 
-    gpio_write_pin(&config_spi_cs_pin, true);
+    gpio_write_pin(&bsp_pins_adc_cfg_spi_cs_out_cfg, true);
     MXC_Delay(4); // TODO are these delays necessary?
 
     *out = cfg_spi_tx_buff[2];
@@ -336,7 +275,7 @@ AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val)
     cfg_spi_tx_buff[1] = (uint8_t)reg;
     cfg_spi_tx_buff[2] = val;
 
-    gpio_write_pin(&config_spi_cs_pin, false);
+    gpio_write_pin(&bsp_pins_adc_cfg_spi_cs_out_cfg, false);
     MXC_Delay(4); // TODO are these delays necessary?
 
     if (MXC_SPI_MasterTransaction(&cfg_spi_req) != E_NO_ERROR)
@@ -344,7 +283,7 @@ AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val)
         return AD4630_ERROR_CONFIG_ERROR;
     }
 
-    gpio_write_pin(&config_spi_cs_pin, true);
+    gpio_write_pin(&bsp_pins_adc_cfg_spi_cs_out_cfg, true);
     MXC_Delay(4); // TODO are these delays necessary?
 
     return AD4630_ERROR_ALL_OK;

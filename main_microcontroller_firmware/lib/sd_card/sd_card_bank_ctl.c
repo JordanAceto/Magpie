@@ -25,6 +25,7 @@
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
 #include "bsp_i2c.h"
+#include "bsp_pins.h"
 #include "sd_card_bank_ctl.h"
 #include <stddef.h> // for NULL
 
@@ -301,7 +302,7 @@ SD_Card_Bank_Ctl_Error_t max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t 
     max_7312_i2c_buff[1u] = val;
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .i2c = bsp_pins_3v3_i2c_handle,
         .addr = MAX7312_7_BIT_I2C_ADDR,
         .tx_buf = max_7312_i2c_buff,
         .tx_len = num_bytes_to_write,
@@ -322,7 +323,7 @@ SD_Card_Bank_Ctl_Error_t max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *
     max_7312_i2c_buff[0u] = reg;
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .i2c = bsp_pins_3v3_i2c_handle,
         .addr = MAX7312_7_BIT_I2C_ADDR,
         .tx_buf = max_7312_i2c_buff,
         .tx_len = num_bytes_to_write,

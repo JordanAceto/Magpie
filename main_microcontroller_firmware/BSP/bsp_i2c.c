@@ -10,33 +10,27 @@
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
+#include "board.h"
 #include "bsp_i2c.h"
+#include "bsp_pins.h"
 #include "mxc_errors.h"
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
 int bsp_1v8_i2c_init()
 {
-    const mxc_gpio_cfg_t i2c0_pins = {
-        .port = MXC_GPIO0,
-        .mask = (MXC_GPIO_PIN_6 | MXC_GPIO_PIN_7),
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_ALT1,
-        .vssel = MXC_GPIO_VSSEL_VDDIO,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&i2c0_pins);
+    MXC_GPIO_Config(&bsp_pins_1v8_i2c_active_cfg);
 
-    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_I2C0);
+    MXC_SYS_ClockEnable(bsp_pins_1v8_i2c_clock_enum);
 
     int res = E_NO_ERROR;
 
-    if ((res = MXC_I2C_Init(BSP_I2C_1V8_BUS_HANDLE, 1, 0)) != E_NO_ERROR)
+    if ((res = MXC_I2C_Init(bsp_pins_1v8_i2c_handle, 1, 0)) != E_NO_ERROR)
     {
         return res;
     }
 
-    if ((res = MXC_I2C_SetFrequency(BSP_I2C_1V8_BUS_HANDLE, BSP_I2C_1V8_BUS_SPEED)) != BSP_I2C_1V8_BUS_SPEED)
+    if ((res = MXC_I2C_SetFrequency(bsp_pins_1v8_i2c_handle, BSP_I2C_1V8_BUS_SPEED)) != BSP_I2C_1V8_BUS_SPEED)
     {
         return res;
     }
@@ -46,45 +40,29 @@ int bsp_1v8_i2c_init()
 
 int bsp_1V8_i2c_deinit()
 {
-    const mxc_gpio_cfg_t i2c0_pins = {
-        .port = MXC_GPIO0,
-        .mask = (MXC_GPIO_PIN_6 | MXC_GPIO_PIN_7),
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_OUT, // this is a workaround to avoid violating downstream devices
-        .vssel = MXC_GPIO_VSSEL_VDDIO,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&i2c0_pins);
+    MXC_GPIO_Config(&bsp_pins_1v8_i2c_driven_low_cfg);
     // drive the pins low to avoid violating downstream devices, we can remove this when we move to the next spin
-    gpio_write_pin(&i2c0_pins, false);
+    gpio_write_pin(&bsp_pins_1v8_i2c_driven_low_cfg, false);
 
-    MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_I2C0);
+    MXC_SYS_ClockDisable(bsp_pins_1v8_i2c_clock_enum);
 
-    return MXC_I2C_Shutdown(BSP_I2C_1V8_BUS_HANDLE);
+    return MXC_I2C_Shutdown(bsp_pins_1v8_i2c_handle);
 }
 
 int bsp_3v3_i2c_init()
 {
-    const mxc_gpio_cfg_t i2c1_pins = {
-        .port = MXC_GPIO0,
-        .mask = (MXC_GPIO_PIN_14 | MXC_GPIO_PIN_15),
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_ALT1,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&i2c1_pins);
+    MXC_GPIO_Config(&bsp_pins_3v3_i2c_active_cfg);
 
-    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_I2C1);
+    MXC_SYS_ClockEnable(bsp_pins_3v3_i2c_clock_enum);
 
     int res = E_NO_ERROR;
 
-    if ((res = MXC_I2C_Init(BSP_I2C_3V3_BUS_HANDLE, 1, 0)) != E_NO_ERROR)
+    if ((res = MXC_I2C_Init(bsp_pins_3v3_i2c_handle, 1, 0)) != E_NO_ERROR)
     {
         return res;
     }
 
-    if ((res = MXC_I2C_SetFrequency(BSP_I2C_3V3_BUS_HANDLE, BSP_I2C_3V3_BUS_SPEED)) != BSP_I2C_3V3_BUS_SPEED)
+    if ((res = MXC_I2C_SetFrequency(bsp_pins_3v3_i2c_handle, BSP_I2C_3V3_BUS_SPEED)) != BSP_I2C_3V3_BUS_SPEED)
     {
         return res;
     }
@@ -94,17 +72,9 @@ int bsp_3v3_i2c_init()
 
 int bsp_3v3_i2c_deinit()
 {
-    const mxc_gpio_cfg_t i2c1_pins = {
-        .port = MXC_GPIO0,
-        .mask = (MXC_GPIO_PIN_14 | MXC_GPIO_PIN_15),
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&i2c1_pins);
+    MXC_GPIO_Config(&bsp_pins_3v3_i2c_high_z_cfg);
 
-    MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_I2C1);
+    MXC_SYS_ClockDisable(bsp_pins_3v3_i2c_clock_enum);
 
-    return MXC_I2C_Shutdown(BSP_I2C_3V3_BUS_HANDLE);
+    return MXC_I2C_Shutdown(bsp_pins_3v3_i2c_handle);
 }

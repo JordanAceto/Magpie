@@ -42,6 +42,8 @@ typedef enum
 /**
  * @brief `audio_dma_init()` initializes the audio DMA stream, this must be called before calling any other DMA functions
  *
+ * @pre the LDOs are powered on via bsp_power_on_LDOs().
+ *
  * @post the DMA stream is initialized and ready to use
  *
  * @retval `AUDIO_DMA_ERROR_ALL_OK` if the operation succeeded, else an error code
@@ -51,7 +53,8 @@ Audio_DMA_Error_t audio_dma_init();
 /**
  * @brief `audio_dma_start()` starts the audio DMA stream
  *
- * @pre DMA initialization is complete, the ADC is initialized and continuously converting
+ * @pre DMA initialization is complete, the ADC is initialized and continuously converting, and the LDOs are powered on
+ * via bsp_power_on_LDOs().
  *
  * @post the DMA stream is started and the internal buffers are continuously filled with audio data
  *
@@ -62,7 +65,7 @@ Audio_DMA_Error_t audio_dma_start();
 /**
  * @brief `audio_dma_stop()` stops the audio DMA stream
  *
- * @pre DMA initialization is complete
+ * @pre DMA initialization is complete and the LDOs are powered on via bsp_power_on_LDOs().
  *
  * @post the DMA stream is stopped, data is no longer moved into the internal buffers
  *
@@ -73,7 +76,8 @@ Audio_DMA_Error_t audio_dma_stop();
 /**
  * @brief `audio_dma_num_buffers_available()` is the number of full buffers available for reading
  *
- * @pre  DMA initialization is complete and the DMA stream has been started
+ * @pre DMA initialization is complete and the DMA stream has been started, and the LDOs are powered on via
+ * bsp_power_on_LDOs().
  *
  * @retval the number of buffers available
  */
@@ -83,7 +87,8 @@ uint32_t audio_dma_num_buffers_available();
  * @brief `audio_dma_consume_buffer()` yields the next available buffer and reduces the number of buffers available.
  * The samples in the buffer are 24 bit wide, big-endian format.
  *
- * @pre  DMA initialization is complete, the DMA stream has been started, and at least one buffer is available
+ * @pre  DMA initialization is complete, the DMA stream has been started, and at least one buffer is available. The LDOs
+ * are powered on via bsp_power_on_LDOs().
  *
  * @post a single buffer is consumed, reducing the number of available buffers by 1
  *

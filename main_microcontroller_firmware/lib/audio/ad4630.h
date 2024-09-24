@@ -24,6 +24,8 @@ typedef enum
 /***
  * @brief `ad4630_init()` initializes the AD4630 ADC
  *
+ * @pre the LDOs are powered on via bsp_power_on_LDOs().
+ *
  * @post the ADC is initialized and ready to use
  *
  * @retval `AD4630_ERROR_ALL_OK` if the operation succeeded, else an error code
@@ -33,7 +35,7 @@ AD4630_Error_t ad4630_init();
 /**
  * `ad4630_cont_conversions_start()` enables the ADC conversion clock and starts the ADC continuous conversions
  *
- * @pre ADC initialization is complete
+ * @pre ADC initialization is complete, the LDOs are powered on via bsp_power_on_LDOs().
  *
  * @post the ADC conversion clock is enabled and the ADC continuously converts samples at the rate of the ADC conversion clock
  */
@@ -42,7 +44,7 @@ void ad4630_cont_conversions_start();
 /**
  * `ad4630_cont_conversions_stop()` disables the ADC conversion clock and stops the ADC continuous conversions
  *
- * @pre ADC initialization is complete
+ * @pre ADC initialization is complete, the LDOs are powered on via bsp_power_on_LDOs().
  *
  * @post the ADC conversion clock is disabled and conversions stop
  */

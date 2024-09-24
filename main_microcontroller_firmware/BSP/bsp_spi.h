@@ -10,31 +10,12 @@
 #ifndef BSP_SPI_H__
 #define BSP_SPI_H__
 
-/* Includes ----------------------------------------------------------------------------------------------------------*/
-
-#include "spi.h"
-
-/* Public definitions ------------------------------------------------------------------------------------------------*/
-
-/**
- * @brief The SPI bus which is used to configure the ADC is represented here.
- */
-#define BSP_ADC_CONFIG_SPI_HANDLE (MXC_SPI2)
-
-/**
- * @brief The SPI bus which reads converted analog signals from the ADC channel 0 is represented here.
- */
-#define BSP_ADC_CH0_DATA_SPI_HANDLE (MXC_SPI1)
-
-/**
- * @brief The SPI bus which reads converted analog signals from the ADC channel 1 is represented here.
- */
-#define BSP_ADC_CH1_DATA_SPI_HANDLE (MXC_SPI0)
-
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
  * @brief `bsp_adc_config_spi_init()` initializes and starts SPI2 bus as a master.
+ *
+ * @pre the LDOs are powered on via bsp_power_on_LDOs().
  *
  * @post QSPI2 is initialized and ready to send config data to the ADC.
  *
@@ -54,6 +35,8 @@ int bsp_adc_config_spi_deinit();
 /**
  * @brief `bsp_adc_ch0_data_spi_init()` initializes and starts SPI1 bus as a slave which received data from the ADC.
  *
+ * @pre the LDOs are powered on via bsp_power_on_LDOs().
+ *
  * @post QSPI1 is initialized and ready to read data from the ADC.
  *
  * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
@@ -71,6 +54,8 @@ int bsp_adc_ch0_data_spi_deinit();
 
 /**
  * @brief `bsp_adc_ch1_data_spi_init()` initializes and starts SPI0 bus as a slave which received data from the ADC.
+ *
+ * @pre the LDOs are powered on via bsp_power_on_LDOs().
  *
  * @post QSPI0 is initialized and ready to read data from the ADC.
  *

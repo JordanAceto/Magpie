@@ -16,34 +16,31 @@
 
 /* Public definitions ------------------------------------------------------------------------------------------------*/
 
-#define BSP_NORDIC_UART_HANDLE (MXC_UART0)
 #define BSP_NORDIC_UART_BAUD (115200)
 
-#define BSP_CONSOLE_UART_HANDLE (MXC_UART1)
 #define BSP_CONSOLE_UART_BAUD (115200)
 
-#define BSP_GNSS_UART_HANDLE (MXC_UART2)
 #define BSP_GNSS_UART_BAUD (115200)
 
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * @brief `bsp_nordic_uart_init()` initializes and starts Nordic UART.
+ * @brief `bsp_ble_uart_init()` initializes and starts Nordic UART.
  *
  * @post UART0 is initialized and ready to use. The GPIO pins associated with the bus are configured for UART operation.
  *
  * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-int bsp_nordic_uart_init();
+int bsp_ble_uart_init();
 
 /**
- * @brief `bsp_nordic_uart_deinit()` de-initializes the Nordic UART and sets the associated pins to high-Z.
+ * @brief `bsp_ble_uart_deinit()` de-initializes the Nordic UART and sets the associated pins to high-Z.
  *
  * @post the Nordic UART is de-initialized. The GPIO pins associated with the bus are hig-Z.
  *
  * @retval Success/Fail, see MXC_Error_Codes for a list of return codes.
  */
-int bsp_nordic_uart_deinit();
+int bsp_ble_uart_deinit();
 
 /**
  * @brief `bsp_console_uart_init()` initializes and starts Console UART.

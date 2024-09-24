@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bsp_pins.h"
 #include "bsp_uart.h"
 #include "cli.h"
 #include "mxc_delay.h"
@@ -40,7 +41,7 @@ int main(void)
 {
     printf("***********Hello CLI!***********\n\n");
 
-    MXC_CLI_Init(BSP_CONSOLE_UART_HANDLE, cli_commands, CUSTOM_COMMANDS_ARRAY_SIZE);
+    MXC_CLI_Init(bsp_pins_console_uart_handle, cli_commands, CUSTOM_COMMANDS_ARRAY_SIZE);
 
     while (1)
     {

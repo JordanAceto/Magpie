@@ -6,6 +6,7 @@
 #include "i2c.h"
 
 #include "bsp_i2c.h"
+#include "bsp_pins.h"
 #include "real_time_clock.h"
 #include "time_helpers.h"
 
@@ -82,17 +83,6 @@ typedef enum
     DS3231_STATUS_REGISTER_FLAG_OSF = (1u << 7u),
 } DS3231_Status_Register_Flags_t;
 
-/* Private variables -------------------------------------------------------------------------------------------------*/
-
-// interrupts come from the RTC to the MAX
-static mxc_gpio_cfg_t rtc_int_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_13,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_IN,
-    .vssel = MXC_GPIO_VSSEL_VDDIOH,
-};
-
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
@@ -133,7 +123,7 @@ static Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t nu
 
 Real_Time_Clock_Error_t real_time_clock_init()
 {
-    MXC_GPIO_Config(&rtc_int_pin);
+    MXC_GPIO_Config(&bsp_pins_rtc_int_cfg);
 
     uint8_t write_buff[] = {
         DS3231_REGISTER_CONTROL,             // start at the control reg, we'll increment into the status reg
@@ -262,7 +252,7 @@ Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *re
     read_buff[0] = start_reg;
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .i2c = bsp_pins_3v3_i2c_handle,
         .addr = DS3231_7_BIT_I2C_ADDR,
         .tx_buf = read_buff,
         .tx_len = 1,
@@ -280,7 +270,7 @@ Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *re
 Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes_to_write)
 {
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .i2c = bsp_pins_3v3_i2c_handle,
         .addr = DS3231_7_BIT_I2C_ADDR,
         .tx_buf = write_buff,
         .tx_len = num_bytes_to_write,

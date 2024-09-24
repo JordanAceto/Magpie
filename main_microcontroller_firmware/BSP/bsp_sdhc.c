@@ -14,6 +14,7 @@
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
 #include "board.h"
+#include "bsp_pins.h"
 #include "bsp_sdhc.h"
 #include "sdhc_lib.h"
 
@@ -41,15 +42,7 @@ int bsp_sdhc_init()
     };
     const bool old_adc_pin_state = gpio_read_pin(&adc_pin_that_gets_overwritten);
 
-    const mxc_gpio_cfg_t sdhc_pins = {
-        .port = MXC_GPIO1,
-        .mask = MXC_GPIO_PIN_0 | MXC_GPIO_PIN_1 | MXC_GPIO_PIN_2 | MXC_GPIO_PIN_3 | MXC_GPIO_PIN_4 | MXC_GPIO_PIN_5,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_ALT1,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&sdhc_pins);
+    MXC_GPIO_Config(&bsp_pins_sdhc_active_cfg);
 
     MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_SDHC);
 
@@ -78,15 +71,7 @@ int bsp_sdhc_init()
 
 int bsp_sdhc_deinit()
 {
-    const mxc_gpio_cfg_t sdhc_pins = {
-        .port = MXC_GPIO1,
-        .mask = MXC_GPIO_PIN_0 | MXC_GPIO_PIN_1 | MXC_GPIO_PIN_2 | MXC_GPIO_PIN_3 | MXC_GPIO_PIN_4 | MXC_GPIO_PIN_5,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&sdhc_pins);
+    MXC_GPIO_Config(&bsp_pins_sdhc_high_z_cfg);
 
     MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_SDHC);
 

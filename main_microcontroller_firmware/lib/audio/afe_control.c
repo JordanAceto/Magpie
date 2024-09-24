@@ -8,6 +8,7 @@
 #include "afe_control.h"
 #include "board.h"
 #include "bsp_i2c.h"
+#include "bsp_pins.h"
 
 /* Private defines ---------------------------------------------------------------------------------------------------*/
 
@@ -32,24 +33,6 @@
 static unsigned char tx_buff[MAX14662_TX_BUFF_LEN];
 static unsigned char rx_buff[MAX14662_RX_BUFF_LEN];
 
-const mxc_gpio_cfg_t afe_ch0_enable_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_11,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIOH,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
-const mxc_gpio_cfg_t afe_ch1_enable_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_12,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIOH,
-    .drvstr = MXC_GPIO_DRVSTR_0,
-};
-
 static bool channel_0_is_enabled = false;
 static bool channel_1_is_enabled = false;
 
@@ -64,7 +47,7 @@ static bool channel_1_is_enabled = false;
  *
  * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
  */
-AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control();
+static AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control();
 
 /**
  * @brief Sets the channels to be enabled on the TPS22994.
@@ -79,14 +62,14 @@ AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control();
  *
  * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
  */
-AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1);
+static AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
 AFE_Control_Error_t afe_control_init()
 {
-    MXC_GPIO_Config(&afe_ch0_enable_pin);
-    MXC_GPIO_Config(&afe_ch1_enable_pin);
+    MXC_GPIO_Config(&bsp_pins_afe_ch0_en_cfg);
+    MXC_GPIO_Config(&bsp_pins_afe_ch1_en_cfg);
 
     if (tps22994_configure_ch0_and_ch1_for_i2c_control() != AFE_CONTROL_ERROR_ALL_OK)
     {
@@ -105,12 +88,12 @@ AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel)
     if (channel == AFE_CONTROL_CHANNEL_0)
     {
         channel_0_is_enabled = true;
-        gpio_write_pin(&afe_ch0_enable_pin, true);
+        gpio_write_pin(&bsp_pins_afe_ch0_en_cfg, true);
     }
     else if (channel == AFE_CONTROL_CHANNEL_1)
     {
         channel_1_is_enabled = true;
-        gpio_write_pin(&afe_ch1_enable_pin, true);
+        gpio_write_pin(&bsp_pins_afe_ch1_en_cfg, true);
     }
 
     // then power on the MEMs microphones via the I2C controlled load switches
@@ -137,11 +120,11 @@ AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel)
     // then power off the opamps and common mode ref via load switches controlled by GPIO pins
     if (channel == AFE_CONTROL_CHANNEL_0)
     {
-        gpio_write_pin(&afe_ch0_enable_pin, false);
+        gpio_write_pin(&bsp_pins_afe_ch0_en_cfg, false);
     }
     else if (channel == AFE_CONTROL_CHANNEL_1)
     {
-        gpio_write_pin(&afe_ch1_enable_pin, false);
+        gpio_write_pin(&bsp_pins_afe_ch1_en_cfg, false);
     }
 
     return AFE_CONTROL_ERROR_ALL_OK;
@@ -175,7 +158,7 @@ AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Cont
     const uint8_t address = channel == AFE_CONTROL_CHANNEL_0 ? MAX14662_CH0_7_BIT_I2C_ADDRESS : MAX14662_CH1_7_BIT_I2C_ADDRESS;
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_1V8_BUS_HANDLE,
+        .i2c = bsp_pins_1v8_i2c_handle,
         .addr = address,
         .tx_buf = tx_buff,
         .tx_len = MAX14662_TX_BUFF_LEN,
@@ -200,7 +183,7 @@ AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
     const uint8_t address = channel == AFE_CONTROL_CHANNEL_0 ? MAX14662_CH0_7_BIT_I2C_ADDRESS : MAX14662_CH1_7_BIT_I2C_ADDRESS;
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_1V8_BUS_HANDLE,
+        .i2c = bsp_pins_1v8_i2c_handle,
         .addr = address,
         .tx_buf = NULL,
         .tx_len = 0,
@@ -241,7 +224,7 @@ AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control()
     tx_buff[1] = TPS22994_I2C_CTL_MASK;
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .i2c = bsp_pins_3v3_i2c_handle,
         .addr = TPS22994_7_BIT_I2C_ADDRESS,
         .tx_buf = tx_buff,
         .tx_len = 2,
@@ -266,7 +249,7 @@ AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1)
     tx_buff[1] = TPS22994_I2C_CTL_MASK | (channel_1_is_enabled << 1) | (channel_0_is_enabled);
 
     mxc_i2c_req_t req = {
-        .i2c = BSP_I2C_3V3_BUS_HANDLE,
+        .i2c = bsp_pins_3v3_i2c_handle,
         .addr = TPS22994_7_BIT_I2C_ADDRESS,
         .tx_buf = tx_buff,
         .tx_len = 2,

@@ -16,22 +16,16 @@
 
 /* Public definitions ------------------------------------------------------------------------------------------------*/
 
-/**
- * @brief The I2C bus serving the 1.8 volt domain is represented here.
- */
-#define BSP_I2C_1V8_BUS_HANDLE (MXC_I2C0_BUS0)
 #define BSP_I2C_1V8_BUS_SPEED (MXC_I2C_STD_MODE)
 
-/**
- * @brief The I2C bus serving the 3.3 volt domain is represented here.
- */
-#define BSP_I2C_3V3_BUS_HANDLE (MXC_I2C1_BUS0)
 #define BSP_I2C_3V3_BUS_SPEED (MXC_I2C_STD_MODE)
 
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
  * @brief `bsp_1v8_i2c_init()` initializes and starts I2C0 bus as an I2C master in the 1.8V domain.
+ *
+ * @pre the LDOs are powered on via bsp_power_on_LDOs().
  *
  * @post the I2C0 bus is initialized and ready to use. The GPIO pins associated with the bus are pulled up to 1.8V.
  *

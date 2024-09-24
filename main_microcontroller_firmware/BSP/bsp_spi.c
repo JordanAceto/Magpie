@@ -1,7 +1,10 @@
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
+#include "spi.h"
+
 #include "board.h"
+#include "bsp_pins.h"
 #include "bsp_spi.h"
 #include "mxc_errors.h"
 
@@ -9,15 +12,7 @@
 
 int bsp_adc_config_spi_init()
 {
-    const mxc_gpio_cfg_t config_spi_pins = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_25 | MXC_GPIO_PIN_26 | MXC_GPIO_PIN_27,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_ALT2,
-        .vssel = MXC_GPIO_VSSEL_VDDIO,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&config_spi_pins);
+    MXC_GPIO_Config(&bsp_pins_adc_cfg_spi_cs_out_cfg);
 
     const mxc_gpio_cfg_t config_chip_sel_pin = {
         .port = MXC_GPIO0,
@@ -31,7 +26,7 @@ int bsp_adc_config_spi_init()
 
     gpio_write_pin(&config_chip_sel_pin, true);
 
-    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_SPI2);
+    MXC_SYS_ClockEnable(bsp_pins_adc_cfg_spi_clock_enum);
 
     int res = E_NO_ERROR;
 
@@ -39,7 +34,7 @@ int bsp_adc_config_spi_init()
     const uint32_t CFG_SPI_CLK_FREQ_Hz = 5000000;
 
     if ((res = MXC_SPI_Init(
-             BSP_ADC_CONFIG_SPI_HANDLE,
+             bsp_pins_adc_cfg_spi_handle,
              1, // 1 -> master mode
              0, // 0 -> quad mode not used, single bit SPI
              1, // num slaves
@@ -49,15 +44,15 @@ int bsp_adc_config_spi_init()
     {
         return res;
     }
-    if ((res = MXC_SPI_SetDataSize(BSP_ADC_CONFIG_SPI_HANDLE, 8)) != E_NO_ERROR)
+    if ((res = MXC_SPI_SetDataSize(bsp_pins_adc_cfg_spi_handle, 8)) != E_NO_ERROR)
     {
         return res;
     }
-    if ((res = MXC_SPI_SetWidth(BSP_ADC_CONFIG_SPI_HANDLE, SPI_WIDTH_STANDARD)) != E_NO_ERROR)
+    if ((res = MXC_SPI_SetWidth(bsp_pins_adc_cfg_spi_handle, SPI_WIDTH_STANDARD)) != E_NO_ERROR)
     {
         return res;
     }
-    if ((res = MXC_SPI_SetMode(BSP_ADC_CONFIG_SPI_HANDLE, SPI_MODE_0)) != E_NO_ERROR)
+    if ((res = MXC_SPI_SetMode(bsp_pins_adc_cfg_spi_handle, SPI_MODE_0)) != E_NO_ERROR)
     {
         return res;
     }
@@ -67,15 +62,7 @@ int bsp_adc_config_spi_init()
 
 int bsp_adc_config_spi_deinit()
 {
-    const mxc_gpio_cfg_t config_spi_pins = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_25 | MXC_GPIO_PIN_26 | MXC_GPIO_PIN_27,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIO,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&config_spi_pins);
+    MXC_GPIO_Config(&bsp_pins_adc_cfg_spi_high_z_cfg);
 
     const mxc_gpio_cfg_t config_chip_sel_pin = {
         .port = MXC_GPIO0,
@@ -88,29 +75,21 @@ int bsp_adc_config_spi_deinit()
     gpio_write_pin(&config_chip_sel_pin, false);
     MXC_GPIO_Config(&config_chip_sel_pin);
 
-    MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_SPI2);
+    MXC_SYS_ClockDisable(bsp_pins_adc_cfg_spi_clock_enum);
 
-    return MXC_SPI_Shutdown(BSP_ADC_CONFIG_SPI_HANDLE);
+    return MXC_SPI_Shutdown(bsp_pins_adc_cfg_spi_handle);
 }
 
 int bsp_adc_ch0_data_spi_init()
 {
-    const mxc_gpio_cfg_t ch0_data_spi_pins = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_16 | MXC_GPIO_PIN_17 | MXC_GPIO_PIN_19,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_ALT2,
-        .vssel = MXC_GPIO_VSSEL_VDDIO,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&ch0_data_spi_pins);
+    MXC_GPIO_Config(&bsp_pins_adc_ch0_data_spi_active_cfg);
 
-    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_SPI1);
+    MXC_SYS_ClockEnable(bsp_pins_adc_ch0_data_spi_clock_enum);
 
     int res = E_NO_ERROR;
 
     if ((res = MXC_SPI_Init(
-             BSP_ADC_CH0_DATA_SPI_HANDLE,
+             bsp_pins_adc_ch0_data_spi_handle,
              0, // 0 -> slave mode
              0, // 0 -> quad mode not used, single bit SPI
              0, // num slaves, none
@@ -121,11 +100,11 @@ int bsp_adc_ch0_data_spi_init()
         return res;
     }
 
-    if ((res = MXC_SPI_SetWidth(BSP_ADC_CH0_DATA_SPI_HANDLE, SPI_WIDTH_3WIRE)) != E_NO_ERROR)
+    if ((res = MXC_SPI_SetWidth(bsp_pins_adc_ch0_data_spi_handle, SPI_WIDTH_3WIRE)) != E_NO_ERROR)
     {
         return res;
     }
-    if ((res = MXC_SPI_SetMode(BSP_ADC_CH0_DATA_SPI_HANDLE, SPI_MODE_1)) != E_NO_ERROR)
+    if ((res = MXC_SPI_SetMode(bsp_pins_adc_ch0_data_spi_handle, SPI_MODE_1)) != E_NO_ERROR)
     {
         return res;
     }
@@ -135,19 +114,11 @@ int bsp_adc_ch0_data_spi_init()
 
 int bsp_adc_ch0_data_spi_deinit()
 {
-    const mxc_gpio_cfg_t ch0_data_spi_pins = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_16 | MXC_GPIO_PIN_17 | MXC_GPIO_PIN_19,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIO,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&ch0_data_spi_pins);
+    MXC_GPIO_Config(&bsp_pins_adc_ch0_data_spi_high_z_cfg);
 
-    MXC_SYS_ClockDisable(MXC_SYS_PERIPH_CLOCK_SPI1);
+    MXC_SYS_ClockDisable(bsp_pins_adc_ch0_data_spi_clock_enum);
 
-    return MXC_SPI_Shutdown(BSP_ADC_CH0_DATA_SPI_HANDLE);
+    return MXC_SPI_Shutdown(bsp_pins_adc_ch0_data_spi_handle);
 }
 
 int bsp_adc_ch1_data_spi_init()

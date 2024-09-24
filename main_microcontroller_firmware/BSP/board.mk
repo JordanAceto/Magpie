@@ -6,6 +6,7 @@ SRCS += board.c
 SRCS += stdio.c
 
 SRCS += bsp_i2c.c
+SRCS += bsp_pins.c
 SRCS += bsp_pushbutton.c
 SRCS += bsp_sdhc.c
 SRCS += bsp_spi.c

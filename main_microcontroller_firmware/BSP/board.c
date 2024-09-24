@@ -2,39 +2,49 @@
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
 #include "board.h"
+#include "bsp_i2c.h"
+#include "bsp_pins.h"
 #include "bsp_pushbutton.h"
+#include "bsp_sdhc.h"
+#include "bsp_spi.h"
+#include "bsp_spixf.h"
 #include "bsp_status_led.h"
 #include "bsp_uart.h"
 
 #include "mxc_errors.h"
 #include "uart.h"
 
-/* Private variables -------------------------------------------------------------------------------------------------*/
-
-/**
- * The pin that controls the power to the LDOs, set HIGH to power on the LDOs, set LOW to power off the LDOs.
- */
-static const mxc_gpio_cfg_t ldo_enable_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_30,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_OUT,
-    .vssel = MXC_GPIO_VSSEL_VDDIOH,
-};
-
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
 int Board_Init(void)
 {
-    MXC_GPIO_Config(&ldo_enable_pin);
+    // deinit all peripherals at startup
+    bsp_1V8_i2c_deinit();
+    bsp_3v3_i2c_deinit();
+
+    bsp_adc_config_spi_deinit();
+    bsp_adc_ch0_data_spi_deinit();
+    bsp_adc_ch1_data_spi_deinit();
+
+    bsp_gnss_uart_deinit();
+    bsp_ble_uart_deinit();
+
+    bsp_sdhc_deinit();
+
+    bsp_spixf_deinit();
+
+    // power down the LDOs
+    MXC_GPIO_Config(&bsp_pins_ldo_en_cfg);
     bsp_power_off_LDOs();
 
+    // initialize the status LEDs
     status_led_init();
 
+    // initialize the pushbuttons
     pushbuttons_init();
 
+    // initialize the console UART
     int err;
-
     if ((err = bsp_console_uart_init()) != E_NO_ERROR)
     {
         return err;
@@ -45,12 +55,12 @@ int Board_Init(void)
 
 void bsp_power_on_LDOs()
 {
-    gpio_write_pin(&ldo_enable_pin, true);
+    gpio_write_pin(&bsp_pins_ldo_en_cfg, true);
 }
 
 void bsp_power_off_LDOs()
 {
-    gpio_write_pin(&ldo_enable_pin, false);
+    gpio_write_pin(&bsp_pins_ldo_en_cfg, false);
 }
 
 void gpio_write_pin(const mxc_gpio_cfg_t *pin, bool state)
