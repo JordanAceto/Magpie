@@ -6,6 +6,7 @@
 #include "tmr.h"
 
 #include "board.h"
+#include "bsp_pins.h"
 #include "bsp_uart.h"
 #include "gnss_module.h"
 #include "real_time_clock.h"
@@ -45,26 +46,11 @@ static bool is_ascii(int c);
 GNSS_Module_Error_t gnss_module_init()
 {
     // power up the GNSS module
-    const mxc_gpio_cfg_t gnss_enable_pin = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_23,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_OUT,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    MXC_GPIO_Config(&gnss_enable_pin);
-    gpio_write_pin(&gnss_enable_pin, true);
+    MXC_GPIO_Config(&bsp_pins_gps_en_cfg);
+    gpio_write_pin(&bsp_pins_gps_en_cfg, true);
 
     // set up the PPS pin
-    const mxc_gpio_cfg_t gnss_pps_pin = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_24,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-    };
-    MXC_GPIO_Config(&gnss_pps_pin);
+    MXC_GPIO_Config(&bsp_pins_gps_pps_cfg);
 
     // configure the UART pins & clock for communicating with the GNSS module
     if (bsp_gnss_uart_init() != E_NO_ERROR)
@@ -77,25 +63,7 @@ GNSS_Module_Error_t gnss_module_init()
 
 GNSS_Module_Error_t gnss_module_deinit()
 {
-    const mxc_gpio_cfg_t gnss_enable_pin_high_z = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_23,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-        .drvstr = MXC_GPIO_DRVSTR_0,
-    };
-    gpio_write_pin(&gnss_enable_pin_high_z, false); // make sure it's low, has no effect if it was already high-Z
-    MXC_GPIO_Config(&gnss_enable_pin_high_z);
-
-    const mxc_gpio_cfg_t gnss_pps_pin_high_z = {
-        .port = MXC_GPIO0,
-        .mask = MXC_GPIO_PIN_24,
-        .pad = MXC_GPIO_PAD_NONE,
-        .func = MXC_GPIO_FUNC_IN,
-        .vssel = MXC_GPIO_VSSEL_VDDIOH,
-    };
-    MXC_GPIO_Config(&gnss_pps_pin_high_z);
+    gpio_write_pin(&bsp_pins_gps_en_cfg, false);
 
     if (bsp_gnss_uart_deinit() != E_NO_ERROR)
     {
@@ -164,9 +132,9 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
             // here is where most of the actual work happens, we got an NMEA string, now we parse it to get the GPS info
             const bool strict_mode = false; // if true, minmea only allows checksummed sentences
 
-            switch (minmea_sentence_id(nmea_line, strict_mode))
-            {
-            case MINMEA_SENTENCE_GGA: // GGA gives us the fix-quality, we can use this to make sure we have a good fix
+            const enum minmea_sentence_id id = minmea_sentence_id(nmea_line, strict_mode);
+
+            if (id == MINMEA_SENTENCE_GGA) // GGA gives us the fix-quality, we can use this to make sure we have a good fix
             {
                 struct minmea_sentence_gga frame;
                 if (minmea_parse_gga(&frame, nmea_line))
@@ -176,10 +144,8 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
 
                 // we either got a fix quality from GGA or not, either way we need to build at least 1 more NMEA string
                 parser_state = NMEA_PARSER_STATE_WAITING;
-
-                break; // case MINMEA_SENTENCE_GGA
             }
-            case MINMEA_SENTENCE_RMC: // RMC has the datetime, this is where we actually sync the RTC
+            else if (id == MINMEA_SENTENCE_RMC) // RMC has the datetime, this is where we actually sync the RTC
             {
                 struct minmea_sentence_rmc frame;
                 if (minmea_parse_rmc(&frame, nmea_line))
@@ -204,14 +170,11 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
                     // we can keep try again with new NMEA strings until we time out
                     parser_state = NMEA_PARSER_STATE_WAITING;
                 }
-
-                break; // case MINMEA_SENTENCE_GGA
             }
-            default:
-                break;
-            } // switch on NMEA sentence
-
-            parser_state = NMEA_PARSER_STATE_WAITING;
+            else // we got some other NMEA sentence that is not relevant right now, start over with  a new NMEA sentence
+            {
+                parser_state = NMEA_PARSER_STATE_WAITING;
+            }
 
             break; // case NMEA_PARSER_STATE_LINE_COMPLETE
         }
