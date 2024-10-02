@@ -59,7 +59,7 @@ typedef enum
  * @brief `afe_control_init()` initializes the AFE gain control circuitry.
  *
  * @pre the I2C busses on the 1.8V and 3.3V domain are configured as I2C masters and have pullup resistors to 1.8V
- * and 3.3V respectively. The LDOs are powered on via bsp_power_on_LDOs().
+ * and 3.3V respectively. The LDOs are powered on via `bsp_power_on_LDOs()`.
  *
  * @post the AFE gain control is initialized and ready to use.
  *
@@ -70,8 +70,8 @@ AFE_Control_Error_t afe_control_init();
 /**
  * @brief `afe_control_enable(c)` enables AFE channel `c`, powering it on.
  *
- * @pre `afe_gain_ctl_init(hi2c)` has been called with all its preconditions met. The LDOs are powered on via
- * bsp_power_on_LDOs().
+ * @pre `afe_gain_ctl_init()` has been called with all its preconditions met. The LDOs are powered on via
+ * `bsp_power_on_LDOs()`.
  *
  * @param channel the enumerated AFE channel to enable.
  *
@@ -82,8 +82,8 @@ AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel);
 /**
  * @brief `afe_control_disable(c)` disables AFE channel `c`, powering it off.
  *
- * @pre `afe_gain_ctl_init(hi2c)` has been called with all its preconditions met. The LDOs are powered on via
- * bsp_power_on_LDOs().
+ * @pre `afe_gain_ctl_init()` has been called with all its preconditions met. The LDOs are powered on via
+ * `bsp_power_on_LDOs()`.
  *
  * @param channel the enumerated AFE channel to disable.
  *
@@ -93,6 +93,9 @@ AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel);
 
 /**
  * @brief `afe_control_channel_is_enabled(c)` is true iff AFE channel `c` is enabled.
+ *
+ * @pre `afe_gain_ctl_init()` has been called with all its preconditions met. The LDOs are powered on via
+ * `bsp_power_on_LDOs()`.
  *
  * @param channel the channel to check
  *
@@ -107,8 +110,8 @@ bool afe_control_channel_is_enabled(AFE_Control_Channel_t channel);
  *
  * @param gain the enumerated gain setting to use.
  *
- * @pre `afe_gain_ctl_init(hi2c)` has been called with all its preconditions met and channel `c` is enabled. The LDOs
- * are powered on via bsp_power_on_LDOs().
+ * @pre `afe_gain_ctl_init()` has been called with all its preconditions met and channel `c` is enabled. The LDOs
+ * are powered on via `bsp_power_on_LDOs()`.
  *
  * @post The gain of AFE channel `c` is changed to enumerated gain setting `g`.
  *
@@ -121,8 +124,8 @@ AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Cont
  *
  * @param channel the enumerated channel to read the gain of.
  *
- * @pre `afe_gain_ctl_init(hi2c)` has been called with all its preconditions met and channel `c` is enabled. The LDOs
- * are powered on via bsp_power_on_LDOs().
+ * @pre `afe_gain_ctl_init()` has been called with all its preconditions met and channel `c` is enabled. The LDOs
+ * are powered on via `bsp_power_on_LDOs()`.
  *
  * @return the current gain setting, or `AFE_GAIN_SETTING_UNDEFINED` if there was an error reading the gain.
  */
