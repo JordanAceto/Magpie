@@ -98,7 +98,7 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
             continue;
         }
 
-        const char next_char = (char)uart_res;
+        const char this_char = (char)uart_res;
 
         switch (parser_state)
         {
@@ -106,10 +106,10 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
 
             nmea_str_pos = 0;
 
-            if (next_char == START_OF_NMEA_SENTENCE)
+            if (this_char == START_OF_NMEA_SENTENCE)
             {
-                nmea_line[nmea_str_pos] = next_char;
-                nmea_str_pos++;
+                nmea_line[0] = START_OF_NMEA_SENTENCE;
+                nmea_str_pos = 1;
 
                 parser_state = NMEA_PARSER_STATE_BUILDING_STRING;
             }
@@ -117,10 +117,15 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
 
         case NMEA_PARSER_STATE_BUILDING_STRING:
 
-            nmea_line[nmea_str_pos] = next_char;
+            nmea_line[nmea_str_pos] = this_char;
             nmea_str_pos++;
 
-            if (next_char == END_OF_NMEA_SENTENCE)
+            if (nmea_str_pos >= MINMEA_MAX_SENTENCE_LENGTH)
+            {
+                // if our string gets too long it can't be a valid sentence, go back to wwating to start a new sentence
+                parser_state = NMEA_PARSER_STATE_WAITING;
+            }
+            else if (this_char == END_OF_NMEA_SENTENCE)
             {
                 nmea_line[nmea_str_pos] = 0; // null-terminate the string
                 parser_state = NMEA_PARSER_STATE_LINE_COMPLETE;
