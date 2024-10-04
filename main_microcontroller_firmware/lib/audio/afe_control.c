@@ -246,7 +246,7 @@ AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1)
 {
     // turn on any enabled channels
     tx_buff[0] = TPS22994_CTL_REGISTER_ADDRESS;
-    tx_buff[1] = TPS22994_I2C_CTL_MASK | (channel_1_is_enabled << 1) | (channel_0_is_enabled);
+    tx_buff[1] = TPS22994_I2C_CTL_MASK | (channel_0_is_enabled << 1) | (channel_1_is_enabled);
 
     mxc_i2c_req_t req = {
         .i2c = bsp_pins_3v3_i2c_handle,
