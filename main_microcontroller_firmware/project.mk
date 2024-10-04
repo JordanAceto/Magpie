@@ -47,6 +47,9 @@ IPATH += ./third_party/minmea/
 SRCS += ./third_party/minmea/minmea.c
 PROJ_CFLAGS += -Dtimegm=mktime # needed for the minmea lib
 
+IPATH += ./lib/audio/
+VPATH += ./lib/audio/
+
 IPATH += ./lib/utils/
 VPATH += ./lib/utils/
 
