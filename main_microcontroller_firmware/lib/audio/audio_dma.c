@@ -1,8 +1,11 @@
 /* Private includes --------------------------------------------------------------------------------------------------*/
 
-#include "arm_math.h"
 #include "audio_dma.h"
 #include "board.h"
+#include "bsp_pins.h"
+
+#include "arm_math.h"
+
 #include "dma.h"
 #include "dma_regs.h"
 #include "spi.h"
@@ -54,17 +57,6 @@ static uint32_t num_buffer_chunks_with_data_to_be_consumed = 0;
 // true if we write more than DMA_NUM_STALLS_ALLOWED into the big DMA buffer
 static bool overrun_occured = false;
 
-/**
- * The ADC busy pin, goes high when the ADC starts a conversion and goes low when the conversion finishes.
- */
-static const mxc_gpio_cfg_t adc_busy_pin = {
-    .port = MXC_GPIO0,
-    .mask = MXC_GPIO_PIN_4,
-    .pad = MXC_GPIO_PAD_NONE,
-    .func = MXC_GPIO_FUNC_IN,
-    .vssel = MXC_GPIO_VSSEL_VDDIO,
-};
-
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
@@ -84,7 +76,7 @@ void DMA0_IRQHandler();
 
 Audio_DMA_Error_t audio_dma_init()
 {
-    MXC_GPIO_Config(&adc_busy_pin);
+    MXC_GPIO_Config(&bsp_pins_adc_cs_check_pin_cfg);
 
     NVIC_EnableIRQ(DMA0_IRQn);
 
@@ -162,19 +154,19 @@ Audio_DMA_Error_t audio_dma_init()
 
 Audio_DMA_Error_t audio_dma_start()
 {
-    MXC_SPI_ClearRXFIFO(DATA_SPI_BUS);
+    MXC_SPI_ClearRXFIFO(bsp_pins_adc_ch0_data_spi_handle);
 
     if (MXC_DMA_EnableInt(dma_channel) != E_NO_ERROR)
     {
         return AUDIO_DMA_ERROR_DMA_ERROR;
     }
 
-    DATA_SPI_BUS->dma |= MXC_F_SPI_DMA_RX_FIFO_EN;
-    if (MXC_SPI_SetRXThreshold(DATA_SPI_BUS, DMA_SPI_RX_THRESHOLD) != E_NO_ERROR)
+    bsp_pins_adc_ch0_data_spi_handle->dma |= MXC_F_SPI_DMA_RX_FIFO_EN;
+    if (MXC_SPI_SetRXThreshold(bsp_pins_adc_ch0_data_spi_handle, DMA_SPI_RX_THRESHOLD) != E_NO_ERROR)
     {
         return AUDIO_DMA_ERROR_DMA_ERROR;
     }
-    DATA_SPI_BUS->dma |= MXC_F_SPI_DMA_RX_DMA_EN;
+    bsp_pins_adc_ch0_data_spi_handle->dma |= MXC_F_SPI_DMA_RX_DMA_EN;
 
     // stall until a rising edge on slave-sel-B. This is to insure we have no partial writes (1 or 2 bytes) that mess up the dma
     bool stall = true;
@@ -182,13 +174,13 @@ Audio_DMA_Error_t audio_dma_start()
     bool second_read;
     while (stall)
     {
-        first_read = gpio_read_pin(&adc_busy_pin);  // L
-        second_read = gpio_read_pin(&adc_busy_pin); // H
+        first_read = gpio_read_pin(&bsp_pins_adc_cs_check_pin_cfg);  // L
+        second_read = gpio_read_pin(&bsp_pins_adc_cs_check_pin_cfg); // H
         stall = (!second_read || first_read);
         // TODO: there should be a timeout here in case we get stuck for any reason
     }
 
-    DATA_SPI_BUS->ctrl0 |= MXC_F_SPI_CTRL0_EN;
+    bsp_pins_adc_ch0_data_spi_handle->ctrl0 |= MXC_F_SPI_CTRL0_EN;
 
     if (MXC_DMA_Start(dma_channel) != E_NO_ERROR) // sets bits 0 and 1 of control reg and bit 31 of count reload reg
     {
@@ -200,7 +192,7 @@ Audio_DMA_Error_t audio_dma_start()
 
 Audio_DMA_Error_t audio_dma_stop()
 {
-    DATA_SPI_BUS->ctrl0 &= ~MXC_F_SPI_CTRL0_EN; // stop the port
+    bsp_pins_adc_ch0_data_spi_handle->ctrl0 &= ~MXC_F_SPI_CTRL0_EN; // stop the port
 
     if (MXC_DMA_Stop(dma_channel) != E_NO_ERROR)
     {
