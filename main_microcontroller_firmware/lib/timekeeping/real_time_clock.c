@@ -171,7 +171,7 @@ Real_Time_Clock_Error_t real_time_clock_set_datetime(const tm_t *new_time)
     }
     else // year is in [0..99], we can use the BCD->decimal helper directly on the year
     {
-        write_buff[3] = time_helpers_decimal_0_99_to_bcd8(new_time->tm_year);
+        write_buff[3] = time_helpers_decimal_0_99_to_bcd8(orig_year);
     }
 
     if (ds3231_i2c_write(write_buff, 4) != REAL_TIME_CLOCK_ERROR_ALL_OK)
