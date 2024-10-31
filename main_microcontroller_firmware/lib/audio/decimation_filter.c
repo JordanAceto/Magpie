@@ -75,7 +75,6 @@ uint32_t decimation_filter_downsample(
         break;
     }
 
-    // never reached if all preconditions are met
     return dest_len_in_samps;
 }
 

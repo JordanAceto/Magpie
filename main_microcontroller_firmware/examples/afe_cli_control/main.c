@@ -1,7 +1,7 @@
 /**
  * @file    main.c
- * @brief   CLI Hello World example
- * @details This example uses the CLI via UART to toggle the status LEDs.
+ * @brief   CLI AFE control example
+ * @details This example uses the CLI via UART to control the AFE power and gain
  */
 
 /* Private includes --------------------------------------------------------------------------------------------------*/
