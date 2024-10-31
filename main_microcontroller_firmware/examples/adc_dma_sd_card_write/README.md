@@ -1,5 +1,3 @@
-# NOT YET WORKING! Gets stuck in an infinite loop waiting for DMA buffers to be available.
-
 ## Description
 
 - This demo reads audio samples from the ADC at 384kHz and writes .wav files with various sample rates and bit depths to the SD cards
@@ -25,18 +23,18 @@ Universal instructions on building, flashing, and debugging this project can be 
 
 ## Expected Output
 
-The demo attempts to write a short audio files to the root of the SD card file system. LEDs indicate the state of the system.
+The demo attempts to write a short audio files to the root of the SD card file system. A stream of terminal messages along with the LEDs indicate the state of the system.
 
 During execution the LEDs show which stage we are on
 
-- Blue while initializing the system
-- Green while recording audio
-- Note that some stages may finish very quickly, so you may not see the LEDs on during initialization
+- Red->Green->Blue pattern at startup, then all LEDs off
+- Solid Green while recording audio
 
 If there is a problem then one of the onboard LEDs rapidly blink forever as a primitive error handler
 
 - rapid Red LED indicates an error initializing, mounting, or writing to the SD card
 - rapid Blue LED indicates a problem with the ADC or DMA stream
+- rapid Green LED indicates a problem with I2C
 
 
 At the end a slow Green LED blink indicates that all operations were successful

@@ -3,15 +3,16 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "mxc_delay.h"
-#include "tmr.h"
 
 #include "ad4630.h"
+#include "afe_control.h"
 #include "audio_dma.h"
 #include "board.h"
 #include "bsp_i2c.h"
-#include "bsp_spi.h"
+#include "bsp_pins.h"
 #include "bsp_status_led.h"
 #include "data_converters.h"
 #include "decimation_filter.h"
@@ -19,8 +20,6 @@
 #include "sd_card.h"
 #include "sd_card_bank_ctl.h"
 #include "wav_header.h"
-
-#include <string.h>
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
@@ -47,7 +46,16 @@ static void error_handler(Status_LED_Color_t c);
 
 int main(void)
 {
-    printf("*********** CLI ADC write Example ***********\n\n");
+    printf("\n*********** ADC/DMA Wave File Write Example ***********\n\n");
+
+    // simple LED pattern for a visual indication of a reset
+    status_led_set(STATUS_LED_COLOR_RED, true);
+    MXC_Delay(500000);
+    status_led_set(STATUS_LED_COLOR_GREEN, true);
+    MXC_Delay(500000);
+    status_led_set(STATUS_LED_COLOR_BLUE, true);
+    MXC_Delay(1000000);
+    status_led_all_off();
 
     bsp_power_on_LDOs();
 
@@ -74,15 +82,57 @@ int main(void)
     if (bsp_3v3_i2c_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> I2C init\n");
+        error_handler(STATUS_LED_COLOR_GREEN);
     }
     else
     {
         printf("[SUCCESS]--> I2C init\n");
     }
 
+    if (bsp_1v8_i2c_init() != E_NO_ERROR)
+    {
+        printf("[ERROR]--> 1V8 I2C init\n");
+        error_handler(STATUS_LED_COLOR_GREEN);
+    }
+    else
+    {
+        printf("[SUCCESS]--> 1V8 I2C init\n");
+    }
+
+    if (afe_control_init() != AFE_CONTROL_ERROR_ALL_OK)
+    {
+        printf("[ERROR]--> AFE Control init\n");
+        error_handler(STATUS_LED_COLOR_GREEN);
+    }
+    else
+    {
+        printf("[SUCCESS]--> AFE Control init\n");
+    }
+
+    if (afe_control_enable(AFE_CONTROL_CHANNEL_0) != AFE_CONTROL_ERROR_ALL_OK)
+    {
+        printf("[ERROR]--> AFE Control CH0 EN\n");
+        error_handler(STATUS_LED_COLOR_GREEN);
+    }
+    else
+    {
+        printf("[SUCCESS]--> AFE Control CH0 EN\n");
+    }
+
+    if (afe_control_set_gain(AFE_CONTROL_CHANNEL_0, AFE_CONTROL_GAIN_35dB) != AFE_CONTROL_ERROR_ALL_OK)
+    {
+        printf("[ERROR]--> AFE Control CH0 set gain\n");
+        error_handler(STATUS_LED_COLOR_GREEN);
+    }
+    else
+    {
+        printf("[SUCCESS]--> AFE Control CH0 set gain\n");
+    }
+
     if (sd_card_bank_ctl_init() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
     {
         printf("[ERROR]--> SD card bank ctl init\n");
+        error_handler(STATUS_LED_COLOR_GREEN);
     }
     else
     {
@@ -152,6 +202,10 @@ int main(void)
         printf("[SUCCESS]--> SD card unmounted\n");
     }
 
+    printf("\n[SUCCESS]--> All files recorded, shutting down\n");
+
+    bsp_power_off_LDOs();
+
     // do a slow green blink to indicate success
     const uint32_t slow_blink = 1000000;
     while (1)
@@ -165,7 +219,7 @@ int main(void)
 
 void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_secs)
 {
-    printf("[STARTING]--> %dk %d-bit recording\n", wav_attr->sample_rate / 1000, wav_attr->bits_per_sample);
+    printf("\n[STARTING]--> %dk %d-bit %d second recording...\n", wav_attr->sample_rate / 1000, wav_attr->bits_per_sample, file_len_secs);
 
     // a buffers for processing the audio data, big enough to fit one full buffers worth of samples as q31s
     static uint8_t audio_buff_0[AUDIO_DMA_BUFF_LEN_IN_SAMPS * 4];
@@ -197,18 +251,20 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
     // seek past the wave header, we'll fill it in later after recording the audio, we'll know the file length then
     if (sd_card_lseek(wav_header_get_header_length()) != SD_CARD_ERROR_ALL_OK)
     {
-        printf("[ERROR]--> SD card lseek\n");
+        printf("[ERROR]--> SD card lseek past wav header\n");
         error_handler(STATUS_LED_COLOR_RED);
     }
     else
     {
-        printf("[SUCCESS]--> SD card lseek\n");
+        printf("[SUCCESS]--> SD card lseek past wav header\n");
     }
 
     decimation_filter_set_sample_rate(wav_attr->sample_rate);
 
     ad4630_cont_conversions_start();
     audio_dma_start();
+
+    status_led_set(STATUS_LED_COLOR_GREEN, true); // green led on while recording
 
     for (uint32_t num_dma_blocks_written = 0; num_dma_blocks_written < num_dma_blocks_in_the_file;)
     {
@@ -275,15 +331,18 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
         }
     }
 
-    printf("[SUCCESS]--> Wrote file %s\n", file_name_buff);
-
     ad4630_cont_conversions_stop();
     audio_dma_stop();
 
     // back to the top of the file so we can write the wav header now that we can determine the size of the file
     if (sd_card_lseek(0) != SD_CARD_ERROR_ALL_OK)
     {
+        printf("[ERROR]--> SD card lseek to top of file\n");
         error_handler(STATUS_LED_COLOR_RED);
+    }
+    else
+    {
+        printf("[SUCCESS]--> SD card lseek to top of file\n");
     }
 
     wav_attr->file_length = sd_card_fsize();
@@ -291,13 +350,27 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
 
     if (sd_card_fwrite(wav_header_get_header(), wav_header_get_header_length(), &bytes_written) != SD_CARD_ERROR_ALL_OK)
     {
+        printf("[ERROR]--> SD card WAV header fwrite\n");
         error_handler(STATUS_LED_COLOR_RED);
+    }
+    else
+    {
+        printf("[SUCCESS]--> SD card WAV header fwrite\n");
     }
 
     if (sd_card_fclose() != SD_CARD_ERROR_ALL_OK)
     {
+        printf("[ERROR]--> SD card fclose\n");
         error_handler(STATUS_LED_COLOR_RED);
     }
+    else
+    {
+        printf("[SUCCESS]--> SD card fclose\n");
+    }
+
+    printf("[SUCCESS]--> Wrote file %s\n", file_name_buff);
+
+    status_led_set(STATUS_LED_COLOR_GREEN, false); // green led off after recording is complete
 }
 
 void error_handler(Status_LED_Color_t color)
