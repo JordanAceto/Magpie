@@ -24,6 +24,6 @@
     - Examples:
         - `$ make plot SR=48 PB=1` generates a plot for 48kHz decimation with the optional signal right at the passband included
         - `$ make plot SR=192 PB=0` generates a plot for 192kHz with no sine component at the passband edge
-    - Valid sample rates are `[16, 24, 32, 48, 96, 192]`
+    - Valid sample rates are `[24, 48, 96, 192]`
 - Observe the visual plot, and check the resulting WAV file in `./out/` if desired
 - `$ make clean` to delete the compiled C library and any output WAV files

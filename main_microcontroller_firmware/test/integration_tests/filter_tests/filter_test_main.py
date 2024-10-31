@@ -17,7 +17,7 @@ parser.add_argument(
     "sample_rate",
     type=int,
     help="The sample rate in kHz, ex: 192 => 192kHz",
-    choices={16, 24, 32, 48, 96, 192},
+    choices={24, 48, 96, 192},
 )
 parser.add_argument(
     "test_pb",
