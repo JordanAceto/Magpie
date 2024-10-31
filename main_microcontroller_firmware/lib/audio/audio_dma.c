@@ -58,14 +58,6 @@ static bool overrun_occured = false;
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
- * this gets called by the DMA 1st, and when this returns, it goes directly to the DMA0_IRQHandler()
- */
-static void DMA_CALLBACK_func(int a, int b)
-{
-    /* do nothing, immediately transitions to DMA0_IRQHandler() where all the real work happens */
-}
-
-/**
  * @brief In the DMA interrupt handler we correct the endian-ness of the audio data and write it to the big DMA buffer
  */
 void DMA0_IRQHandler();
@@ -129,12 +121,7 @@ Audio_DMA_Error_t audio_dma_init()
         return AUDIO_DMA_ERROR_DMA_ERROR;
     }
 
-    if (MXC_DMA_SetSrcDst(dma_transfer) != E_NO_ERROR) // is this redundant??
-    {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
-    }
-
-    if (MXC_DMA_SetSrcReload(dma_transfer) != E_NO_ERROR) // is this redundant??
+    if (MXC_DMA_SetSrcReload(dma_transfer) != E_NO_ERROR)
     {
         return AUDIO_DMA_ERROR_DMA_ERROR;
     }
@@ -142,11 +129,6 @@ Audio_DMA_Error_t audio_dma_init()
     const bool ch_complete_int = false;
     const bool count_to_zero_int = true;
     if (MXC_DMA_SetChannelInterruptEn(dma_channel, ch_complete_int, count_to_zero_int) != E_NO_ERROR)
-    {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
-    }
-
-    if (MXC_DMA_SetCallback(dma_channel, DMA_CALLBACK_func) != E_NO_ERROR)
     {
         return AUDIO_DMA_ERROR_DMA_ERROR;
     }
@@ -248,9 +230,7 @@ void DMA0_IRQHandler()
     static uint32_t blockPtrModuloDMA = 0;
     static uint32_t offsetDMA = 0;
 
-    MXC_DMA_Handler(MXC_DMA0);
-    int flags = MXC_DMA_ChannelGetFlags(dma_channel); // clears the cfg enable bit
-    MXC_DMA_ChannelClearFlags(dma_channel, flags);
+    MXC_DMA_ChannelClearFlags(dma_channel, MXC_DMA_ChannelGetFlags(dma_channel));
 
     blockPtrModuloDMA = (blockPtrModuloDMA + 1) & (DMA_NUM_STALLS_ALLOWED - 1);
     offsetDMA = blockPtrModuloDMA * AUDIO_DMA_BUFF_LEN_IN_BYTES;
