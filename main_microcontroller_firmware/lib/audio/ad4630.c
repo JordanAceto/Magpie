@@ -84,26 +84,30 @@ static uint8_t data_spi_rx_buff[DATA_SPI_RX_BUFF_LEN_IN_BYTES];
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
- * `ad4630_begin_register_access_mode()` puts the AD4360 into register access mode
+ * `configure_adc_to_output_host_clock()` configures the AD4630 to output a 20MHz clock on its busy pin while the AD4630
+ * chip select pin is pulled low.
  *
- * @pre ADC initialization is complete
+ * @pre all preconditions for `ad4630_init()` are met.
  *
- * @post the AD4360 is ready for register reads and writes via the Config SPI bus
+ * @post the AD4630 outputs a 20MHz SPI clock signal on its busy pin when the CS signal is enabled via
+ * `ad4630_cont_conversions_start()`
  *
- * @retval `AD4630_ERROR_ALL_OK` if successful, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static AD4630_Error_t ad4630_begin_register_access_mode();
+static int configure_adc_to_output_host_clock();
 
 /**
- * @brief `ad4630_end_register_access_mode()` ends register access mode
+ * `configure_data_spi_bus_to_receive_data_from_adc()` configures the SPI bus responsible for reading the AD4630 channel
+ * 0 data.
  *
- * @pre the AD4630 has been placed in register access mode by calling `ad4630_begin_register_access_mode()`
+ * @pre all preconditions for `ad4630_init()` are met, `configure_adc_to_output_host_clock()` has been called, and
+ * the 384kHz chip select signal is turned on via `ad4630_cont_conversions_start()`
  *
- * @post the AD4630 exits register access mode
+ * @post the SPI bus responsible for reading ADC channel 0 is configured as a SPI slave to the AD4630
  *
- * @retval `AD4630_ERROR_ALL_OK` if successful, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static AD4630_Error_t ad4630_end_register_access_mode();
+static int configure_data_spi_bus_to_receive_data_from_adc();
 
 /**
  * @brief `ad4630_read_reg(r, o)` reads register `r` and stores the value in out pointer `o`
@@ -112,11 +116,11 @@ static AD4630_Error_t ad4630_end_register_access_mode();
  *
  * @param out [out] pointer to the byte to read into
  *
- * @pre the AD4630 has been placed in register access mode by calling `ad4630_begin_register_access_mode()`
+ * @pre the AD4630 has been placed in register access mode
  *
- * @retval `AD4630_ERROR_ALL_OK` if successful, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out);
+static int ad4630_read_reg(AD4630_Register_t reg, uint8_t *out);
 
 /**
  * @brief `ad4630_write_reg(r, v)` writes value `v` to register `r`
@@ -125,67 +129,162 @@ static AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out);
  *
  * @param val the value to write to the register
  *
- * @pre the AD4630 has been placed in register access mode by calling `ad4630_begin_register_access_mode()`
+ * @pre the AD4630 has been placed in register access mode
  *
  * @post the value is written to the given register
  *
- * @retval `AD4630_ERROR_ALL_OK` if successful, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val);
+static int ad4630_write_reg(AD4630_Register_t reg, uint8_t val);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
 AD4630_Error_t ad4630_init()
 {
-    // configure all the GPIO pins needed for the ADC
-    MXC_GPIO_Config(&bsp_pins_adc_cfg_spi_cs_out_cfg);
+    // these 3 pins control the 384k ADC clock circuit
     MXC_GPIO_Config(&bsp_pins_adc_clk_en_cfg);
-    MXC_GPIO_Config(&bsp_pins_adc_n_reset_cfg);
     MXC_GPIO_Config(&bsp_pins_adc_clk_master_reset_cfg);
     MXC_GPIO_Config(&bsp_pins_adc_cs_disable_cfg);
 
-    // the reset pin must be high or the ADC will be stuck in reset
-    gpio_write_pin(&bsp_pins_adc_n_reset_cfg, true);
-
+    // start with the 384k clock disabled and U2 output set to high-z
     ad4630_cont_conversions_stop();
 
-    // use the config SPI to initialize the ADC
-    if (bsp_adc_config_spi_init() != E_NO_ERROR)
+    // must be high for ADC to run
+    MXC_GPIO_Config(&bsp_pins_adc_n_reset_cfg);
+
+    // used to check for partial samples, do the config right away to make sure
+    // it's high-Z, otherwise there will be contention with the SPI CS
+    MXC_GPIO_Config(&bsp_pins_adc_cs_check_pin_cfg);
+
+    // reset the ADC
+    gpio_write_pin(&bsp_pins_adc_n_reset_cfg, false);
+    MXC_Delay(100000);
+    gpio_write_pin(&bsp_pins_adc_n_reset_cfg, true);
+
+    // after this call the AD4630 will output the 20MHz SPI clock on the BUSY pin
+    if (configure_adc_to_output_host_clock() != E_NO_ERROR)
     {
         return AD4630_ERROR_CONFIG_ERROR;
     }
 
-    if (ad4630_begin_register_access_mode() != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (ad4630_write_reg(AD4630_REG_OSCILLATOR, AD4630_OSCILLATOR_FLAG_OSC_DIV_BY_4) != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (ad4630_write_reg(AD4630_REG_MODES, AD4630_MODES_FLAG_CLK_MD_HOST_CLK_MODE) != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-    if (ad4630_end_register_access_mode() != AD4630_ERROR_ALL_OK)
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
+    MXC_Delay(100000);
 
-    // set the config CS pin back to high-Z so that it doesn't interfere with the data CS pin
-    MXC_GPIO_Config(&bsp_pins_adc_cfg_spi_cs_high_z_cfg);
-
-    if (bsp_adc_config_spi_deinit() != E_NO_ERROR) // we don't need the config SPI anymore
-    {
-        return AD4630_ERROR_CONFIG_ERROR;
-    }
-
-    // turn on the ADC clock so that we can config the data SPI which need this clock
+    // after this the channel 0 data SPI is ready to receive samples from the AD4630
     ad4630_cont_conversions_start();
-
-    if (bsp_adc_ch0_data_spi_init() != E_NO_ERROR)
+    if (configure_data_spi_bus_to_receive_data_from_adc() != E_NO_ERROR)
     {
         return AD4630_ERROR_CONFIG_ERROR;
+    }
+    ad4630_cont_conversions_stop();
+
+    return AD4630_ERROR_ALL_OK;
+}
+
+void ad4630_cont_conversions_start()
+{
+    gpio_write_pin(&bsp_pins_adc_clk_master_reset_cfg, false);
+    gpio_write_pin(&bsp_pins_adc_cs_disable_cfg, false);
+    gpio_write_pin(&bsp_pins_adc_clk_en_cfg, true);
+}
+
+void ad4630_cont_conversions_stop()
+{
+    gpio_write_pin(&bsp_pins_adc_clk_en_cfg, false);
+    gpio_write_pin(&bsp_pins_adc_cs_disable_cfg, true);
+    gpio_write_pin(&bsp_pins_adc_clk_master_reset_cfg, true);
+}
+
+/* Private function definitions --------------------------------------------------------------------------------------*/
+
+int configure_adc_to_output_host_clock()
+{
+    int res = E_NO_ERROR;
+
+    // enable the SPI port and configure the GPIO pins associated with the SPI bus responsible for ADC configuration
+    if ((res = bsp_adc_config_spi_init()) != E_NO_ERROR)
+    {
+        return res;
+    }
+
+    // freq doesn't matter too much, we only init rarely and write to a few registers
+    const uint32_t CFG_SPI_CLK_FREQ_Hz = 5000000;
+
+    if ((res = MXC_SPI_Init(
+             bsp_pins_adc_cfg_spi_handle,
+             1, // 1 -> master mode
+             0, // 0 -> quad mode not used, single bit SPI
+             0, // num slaves
+             0, // CS polarity (0 for active low)
+             CFG_SPI_CLK_FREQ_Hz,
+             MAP_A)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = MXC_SPI_SetDataSize(bsp_pins_adc_cfg_spi_handle, 8)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = MXC_SPI_SetWidth(bsp_pins_adc_cfg_spi_handle, SPI_WIDTH_STANDARD)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = MXC_SPI_SetMode(bsp_pins_adc_cfg_spi_handle, SPI_MODE_0)) != E_NO_ERROR)
+    {
+        return res;
+    }
+
+    // begin register access mode
+    uint8_t dummy = 0;
+    if ((res = ad4630_read_reg(AD4630_REG_CONFIG_MODE_SPECIAL_CONSTANT, &dummy)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = ad4630_write_reg(AD4630_REG_OSCILLATOR, AD4630_OSCILLATOR_FLAG_OSC_DIV_BY_4)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = ad4630_write_reg(AD4630_REG_MODES, AD4630_MODES_FLAG_CLK_MD_HOST_CLK_MODE)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    // end register access mode
+    if ((res = ad4630_write_reg(AD4630_REG_EXIT_CFG_MD, AD4630_EXIT_CONFIG_MODE_FLAG_EXIT)) != E_NO_ERROR)
+    {
+        return res;
+    }
+
+    // shutdown the config SPI, we're done with it
+    return bsp_adc_config_spi_deinit();
+}
+
+int configure_data_spi_bus_to_receive_data_from_adc()
+{
+    int res = E_NO_ERROR;
+
+    // enable the SPI port and configure the GPIO pins associated with the SPI bus responsible reading ADC channel 0
+    if ((res = bsp_adc_ch0_data_spi_init()) != E_NO_ERROR)
+    {
+        return AD4630_ERROR_CONFIG_ERROR;
+    }
+
+    if ((res = MXC_SPI_Init(
+             bsp_pins_adc_ch0_data_spi_handle,
+             0, // 0 -> slave mode
+             0, // 0 -> quad mode not used, single bit SPI
+             0, // num slaves, none
+             0, // CS polarity (0 for active low)
+             0, // freq is defined by the driving clock
+             MAP_A)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = MXC_SPI_SetWidth(bsp_pins_adc_ch0_data_spi_handle, SPI_WIDTH_3WIRE)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    if ((res = MXC_SPI_SetMode(bsp_pins_adc_ch0_data_spi_handle, SPI_MODE_1)) != E_NO_ERROR)
+    {
+        return res;
     }
 
     // complete the init; don't use the data!
@@ -201,39 +300,27 @@ AD4630_Error_t ad4630_init()
         .rxCnt = 0,
         .completeCB = NULL,
     };
-    if (MXC_SPI_SlaveTransactionAsync(&data_spi_req) != E_NO_ERROR)
+
+    if ((res = MXC_SPI_SlaveTransactionAsync(&data_spi_req)) != E_NO_ERROR)
     {
-        return AD4630_ERROR_CONFIG_ERROR;
+        return res;
+    }
+
+    // threshold of 24 bytes ( 8 samples of 3 bytes each) to trigger dma
+    if ((res = MXC_SPI_SetRXThreshold(bsp_pins_adc_ch0_data_spi_handle, 24)) != E_NO_ERROR)
+    {
+        return res;
     }
 
     // disable the port
     bsp_pins_adc_ch0_data_spi_handle->ctrl0 &= ~(MXC_F_SPI_CTRL0_EN);
 
-    // clear the fifo, start only on pos edge of Slave-sel-B
     MXC_SPI_ClearRXFIFO(bsp_pins_adc_ch0_data_spi_handle);
 
-    ad4630_cont_conversions_stop();
-
-    return AD4630_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-void ad4630_cont_conversions_start()
-{
-    gpio_write_pin(&bsp_pins_adc_clk_en_cfg, true);
-    gpio_write_pin(&bsp_pins_adc_clk_master_reset_cfg, false);
-    gpio_write_pin(&bsp_pins_adc_cs_disable_cfg, false);
-}
-
-void ad4630_cont_conversions_stop()
-{
-    gpio_write_pin(&bsp_pins_adc_clk_en_cfg, false);
-    gpio_write_pin(&bsp_pins_adc_clk_master_reset_cfg, true);
-    gpio_write_pin(&bsp_pins_adc_cs_disable_cfg, true);
-}
-
-/* Private function definitions --------------------------------------------------------------------------------------*/
-
-AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out)
+int ad4630_read_reg(AD4630_Register_t reg, uint8_t *out)
 {
     cfg_spi_tx_buff[0] = (1 << 7) | (reg >> 8);
     cfg_spi_tx_buff[1] = (uint8_t)reg;
@@ -255,9 +342,10 @@ AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out)
         .completeCB = NULL,
     };
 
-    if (MXC_SPI_MasterTransaction(&cfg_spi_req) != E_NO_ERROR)
+    int res = E_NO_ERROR;
+    if ((res = MXC_SPI_MasterTransaction(&cfg_spi_req)) != E_NO_ERROR)
     {
-        return AD4630_ERROR_CONFIG_ERROR;
+        return res;
     }
 
     gpio_write_pin(&bsp_pins_adc_cfg_spi_cs_out_cfg, true);
@@ -265,10 +353,10 @@ AD4630_Error_t ad4630_read_reg(AD4630_Register_t reg, uint8_t *out)
 
     *out = cfg_spi_tx_buff[2];
 
-    return AD4630_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val)
+int ad4630_write_reg(AD4630_Register_t reg, uint8_t val)
 {
     cfg_spi_tx_buff[0] = 0; // all registers we can write to are 8 bits, so this first byte is always zero for writes
     cfg_spi_tx_buff[1] = (uint8_t)reg;
@@ -290,24 +378,14 @@ AD4630_Error_t ad4630_write_reg(AD4630_Register_t reg, uint8_t val)
         .completeCB = NULL,
     };
 
-    if (MXC_SPI_MasterTransaction(&cfg_spi_req) != E_NO_ERROR)
+    int res = E_NO_ERROR;
+    if ((res = MXC_SPI_MasterTransaction(&cfg_spi_req)) != E_NO_ERROR)
     {
-        return AD4630_ERROR_CONFIG_ERROR;
+        return res;
     }
 
     gpio_write_pin(&bsp_pins_adc_cfg_spi_cs_out_cfg, true);
     MXC_Delay(4); // TODO are these delays necessary?
 
-    return AD4630_ERROR_ALL_OK;
-}
-
-AD4630_Error_t ad4630_begin_register_access_mode()
-{
-    uint8_t dummy = 0;
-    return ad4630_read_reg(AD4630_REG_CONFIG_MODE_SPECIAL_CONSTANT, &dummy);
-}
-
-AD4630_Error_t ad4630_end_register_access_mode()
-{
-    return ad4630_write_reg(AD4630_REG_EXIT_CFG_MD, AD4630_EXIT_CONFIG_MODE_FLAG_EXIT);
+    return E_NO_ERROR;
 }

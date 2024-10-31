@@ -8,6 +8,7 @@
 
 #include "dma.h"
 #include "dma_regs.h"
+#include "mxc_sys.h"
 #include "spi.h"
 #include "spi_regs.h"
 
@@ -38,9 +39,6 @@
 
 // the threshold for triggering a DMA request
 #define DMA_SPI_RX_THRESHOLD (3 * 8)
-
-// the SPI bus to use to read audio samples from the ADC
-#define DATA_SPI_BUS (MXC_SPI1)
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 
@@ -79,6 +77,10 @@ Audio_DMA_Error_t audio_dma_init()
     MXC_GPIO_Config(&bsp_pins_adc_cs_check_pin_cfg);
 
     NVIC_EnableIRQ(DMA0_IRQn);
+
+    // enable the peripheral clock, required when MSDK_NO_GPIO_CLK_INIT is defined
+    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_DMA);
+    MXC_SYS_Reset_Periph(MXC_SYS_RESET_DMA0);
 
     if (MXC_DMA_Init(MXC_DMA0) != E_NO_ERROR)
     {
