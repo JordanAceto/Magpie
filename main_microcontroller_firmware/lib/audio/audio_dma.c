@@ -64,8 +64,10 @@ void DMA0_IRQHandler();
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-Audio_DMA_Error_t audio_dma_init()
+int audio_dma_init()
 {
+    int res = E_NO_ERROR;
+
     MXC_GPIO_Config(&bsp_pins_adc_cs_check_pin_cfg);
 
     NVIC_EnableIRQ(DMA0_IRQn);
@@ -74,16 +76,16 @@ Audio_DMA_Error_t audio_dma_init()
     MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_DMA);
     MXC_SYS_Reset_Periph(MXC_SYS_RESET_DMA0);
 
-    if (MXC_DMA_Init(MXC_DMA0) != E_NO_ERROR)
+    if ((res = MXC_DMA_Init(MXC_DMA0)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
     dma_channel = MXC_DMA_AcquireChannel(MXC_DMA0);
 
-    if (dma_channel == E_NONE_AVAIL || dma_channel == E_BAD_STATE || dma_channel == E_BUSY)
+    if ((res = dma_channel) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
     mxc_dma_srcdst_t dma_transfer = {
@@ -111,44 +113,46 @@ Audio_DMA_Error_t audio_dma_init()
         .burst_size = 24,
     };
 
-    if (MXC_DMA_ConfigChannel(dma_config, dma_transfer) != E_NO_ERROR)
+    if ((res = MXC_DMA_ConfigChannel(dma_config, dma_transfer)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
-    if (MXC_DMA_AdvConfigChannel(advConfig) != E_NO_ERROR)
+    if ((res = MXC_DMA_AdvConfigChannel(advConfig)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
-    if (MXC_DMA_SetSrcReload(dma_transfer) != E_NO_ERROR)
+    if ((res = MXC_DMA_SetSrcReload(dma_transfer)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
     const bool ch_complete_int = false;
     const bool count_to_zero_int = true;
-    if (MXC_DMA_SetChannelInterruptEn(dma_channel, ch_complete_int, count_to_zero_int) != E_NO_ERROR)
+    if ((res = MXC_DMA_SetChannelInterruptEn(dma_channel, ch_complete_int, count_to_zero_int)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
-    return AUDIO_DMA_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-Audio_DMA_Error_t audio_dma_start()
+int audio_dma_start()
 {
+    int res = E_NO_ERROR;
+
     MXC_SPI_ClearRXFIFO(bsp_pins_adc_ch0_data_spi_handle);
 
-    if (MXC_DMA_EnableInt(dma_channel) != E_NO_ERROR)
+    if ((res = MXC_DMA_EnableInt(dma_channel)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
     bsp_pins_adc_ch0_data_spi_handle->dma |= MXC_F_SPI_DMA_RX_FIFO_EN;
-    if (MXC_SPI_SetRXThreshold(bsp_pins_adc_ch0_data_spi_handle, DMA_SPI_RX_THRESHOLD) != E_NO_ERROR)
+    if ((res = MXC_SPI_SetRXThreshold(bsp_pins_adc_ch0_data_spi_handle, DMA_SPI_RX_THRESHOLD)) != E_NO_ERROR)
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
     bsp_pins_adc_ch0_data_spi_handle->dma |= MXC_F_SPI_DMA_RX_DMA_EN;
 
@@ -166,24 +170,19 @@ Audio_DMA_Error_t audio_dma_start()
 
     bsp_pins_adc_ch0_data_spi_handle->ctrl0 |= MXC_F_SPI_CTRL0_EN;
 
-    if (MXC_DMA_Start(dma_channel) != E_NO_ERROR) // sets bits 0 and 1 of control reg and bit 31 of count reload reg
+    if ((res = MXC_DMA_Start(dma_channel)) != E_NO_ERROR) // sets bits 0 and 1 of control reg and bit 31 of count reload reg
     {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
+        return res;
     }
 
-    return AUDIO_DMA_ERROR_ALL_OK;
+    return res;
 }
 
-Audio_DMA_Error_t audio_dma_stop()
+int audio_dma_stop()
 {
     bsp_pins_adc_ch0_data_spi_handle->ctrl0 &= ~MXC_F_SPI_CTRL0_EN; // stop the port
 
-    if (MXC_DMA_Stop(dma_channel) != E_NO_ERROR)
-    {
-        return AUDIO_DMA_ERROR_DMA_ERROR;
-    }
-
-    return AUDIO_DMA_ERROR_ALL_OK;
+    return MXC_DMA_Stop(dma_channel);
 }
 
 uint32_t audio_dma_num_buffers_available()

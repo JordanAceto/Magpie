@@ -86,7 +86,7 @@ int main(void)
         printf("[SUCCESS]--> 1.8V I2C init\n");
     }
 
-    if (afe_control_init() != AFE_CONTROL_ERROR_ALL_OK)
+    if (afe_control_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> AFE control init\n");
     }
@@ -134,7 +134,7 @@ int cli_afe_pwr(int argc, char *argv[])
 
     if (state == 0)
     {
-        if (afe_control_disable(channel) != AFE_CONTROL_ERROR_ALL_OK)
+        if (afe_control_disable(channel) != E_NO_ERROR)
         {
             printf("[ERROR]--> AFE channel %d power disable\n", channel);
         }
@@ -145,7 +145,7 @@ int cli_afe_pwr(int argc, char *argv[])
     }
     else // it must be 1
     {
-        if (afe_control_enable(channel) != AFE_CONTROL_ERROR_ALL_OK)
+        if (afe_control_enable(channel) != E_NO_ERROR)
         {
             printf("[ERROR]--> AFE channel %d power enable\n", channel);
         }
@@ -190,13 +190,13 @@ int cli_afe_gain(int argc, char *argv[])
         return -1;
     }
 
-    const AFE_Control_Error_t result = afe_control_set_gain(channel, gain);
+    const int result = afe_control_set_gain(channel, gain);
 
-    if (result == AFE_CONTROL_ERROR_ALL_OK)
+    if (result == E_NO_ERROR)
     {
         printf("[SUCCESS]--> AFE ch %d set gain to %d\n", channel, gain);
     }
-    else if (result == AFE_CONTROL_ERROR_CHANNEL_NOT_ENABLED_ERROR)
+    else if (result == E_UNINITIALIZED)
     {
         printf("[ERROR]--> AFE ch %d must be enabled\n", channel);
     }

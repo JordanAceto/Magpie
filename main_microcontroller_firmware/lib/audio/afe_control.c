@@ -45,9 +45,9 @@ static bool channel_1_is_enabled = false;
  *
  * @post the TPS22994 is configured to control the AFE channels over I2C instead of via GPIO pins.
  *
- * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-static AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control();
+static int tps22994_configure_ch0_and_ch1_for_i2c_control();
 
 /**
  * @brief Sets the channels to be enabled on the TPS22994.
@@ -60,29 +60,32 @@ static AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control();
  *
  * @post channels 0 and/or 1 are enabled or disabled according to the inputs.
  *
- * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-static AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1);
+static int tps22994_set_channels(bool ch0, bool ch1);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-AFE_Control_Error_t afe_control_init()
+int afe_control_init()
 {
+    int res = E_NO_ERROR;
+
     MXC_GPIO_Config(&bsp_pins_afe_ch0_en_cfg);
     MXC_GPIO_Config(&bsp_pins_afe_ch1_en_cfg);
 
-    if (tps22994_configure_ch0_and_ch1_for_i2c_control() != AFE_CONTROL_ERROR_ALL_OK)
+    if ((res = tps22994_configure_ch0_and_ch1_for_i2c_control()) != E_NO_ERROR)
     {
-        return AFE_CONTROL_ERROR_I2C_ERROR;
+        return res;
     }
 
-    afe_control_disable(AFE_CONTROL_CHANNEL_0);
-    afe_control_disable(AFE_CONTROL_CHANNEL_1);
-
-    return AFE_CONTROL_ERROR_ALL_OK;
+    if ((res = afe_control_disable(AFE_CONTROL_CHANNEL_0)) != E_NO_ERROR)
+    {
+        return res;
+    }
+    return afe_control_disable(AFE_CONTROL_CHANNEL_1);
 }
 
-AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel)
+int afe_control_enable(AFE_Control_Channel_t channel)
 {
     // first power on the opamps and common mode ref via load switches controlled by GPIO pins
     if (channel == AFE_CONTROL_CHANNEL_0)
@@ -100,8 +103,10 @@ AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel)
     return tps22994_set_channels(channel_0_is_enabled, channel_1_is_enabled);
 }
 
-AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel)
+int afe_control_disable(AFE_Control_Channel_t channel)
 {
+    int res = E_NO_ERROR;
+
     if (channel == AFE_CONTROL_CHANNEL_0)
     {
         channel_0_is_enabled = false;
@@ -112,9 +117,9 @@ AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel)
     }
 
     // first power off the MEMs microphones via the I2C controlled load switches
-    if (tps22994_set_channels(channel_0_is_enabled, channel_1_is_enabled) != 0)
+    if ((res = tps22994_set_channels(channel_0_is_enabled, channel_1_is_enabled)) != E_NO_ERROR)
     {
-        return AFE_CONTROL_ERROR_I2C_ERROR;
+        return res;
     }
 
     // then power off the opamps and common mode ref via load switches controlled by GPIO pins
@@ -127,7 +132,7 @@ AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel)
         gpio_write_pin(&bsp_pins_afe_ch1_en_cfg, false);
     }
 
-    return AFE_CONTROL_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
 bool afe_control_channel_is_enabled(AFE_Control_Channel_t channel)
@@ -144,11 +149,11 @@ bool afe_control_channel_is_enabled(AFE_Control_Channel_t channel)
     return false;
 }
 
-AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Control_Gain_t gain)
+int afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Control_Gain_t gain)
 {
     if (!afe_control_channel_is_enabled(channel))
     {
-        return AFE_CONTROL_ERROR_CHANNEL_NOT_ENABLED_ERROR;
+        return E_UNINITIALIZED;
     }
 
     // the format for writing is [addr, dummy, data]
@@ -168,9 +173,7 @@ AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Cont
         .callback = NULL,
     };
 
-    const int res = MXC_I2C_MasterTransaction(&req);
-
-    return res == 0 ? AFE_CONTROL_ERROR_ALL_OK : AFE_CONTROL_ERROR_I2C_ERROR;
+    return MXC_I2C_MasterTransaction(&req);
 }
 
 AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
@@ -218,7 +221,7 @@ AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
 
-AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control()
+int tps22994_configure_ch0_and_ch1_for_i2c_control()
 {
     tx_buff[0] = TPS22994_CTL_REGISTER_ADDRESS;
     tx_buff[1] = TPS22994_I2C_CTL_MASK;
@@ -234,15 +237,10 @@ AFE_Control_Error_t tps22994_configure_ch0_and_ch1_for_i2c_control()
         .callback = NULL,
     };
 
-    if (MXC_I2C_MasterTransaction(&req) != 0)
-    {
-        return AFE_CONTROL_ERROR_I2C_ERROR;
-    }
-
-    return AFE_CONTROL_ERROR_ALL_OK;
+    return MXC_I2C_MasterTransaction(&req);
 }
 
-AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1)
+int tps22994_set_channels(bool ch0, bool ch1)
 {
     // turn on any enabled channels
     tx_buff[0] = TPS22994_CTL_REGISTER_ADDRESS;
@@ -259,10 +257,5 @@ AFE_Control_Error_t tps22994_set_channels(bool ch0, bool ch1)
         .callback = NULL,
     };
 
-    if (MXC_I2C_MasterTransaction(&req) != 0)
-    {
-        return AFE_CONTROL_ERROR_I2C_ERROR;
-    }
-
-    return AFE_CONTROL_ERROR_ALL_OK;
+    return MXC_I2C_MasterTransaction(&req);
 }

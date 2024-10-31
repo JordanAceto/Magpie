@@ -15,18 +15,6 @@
 
 #include "time_helpers.h"
 
-/* Public enumerations -----------------------------------------------------------------------------------------------*/
-
-/**
- * @brief enumerated real time clock errors are represented here.
- */
-typedef enum
-{
-    REAL_TIME_CLOCK_ERROR_ALL_OK,
-    REAL_TIME_CLOCK_ERROR_I2C_ERROR,
-    REAL_TIME_CLOCK_ERROR_INVALID_ARG_ERROR,
-} Real_Time_Clock_Error_t;
-
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
@@ -37,9 +25,9 @@ typedef enum
  *
  * @post the system RTC is initialized and ready to use, the 32kHz clock from the DS3231 is enabled.
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-Real_Time_Clock_Error_t real_time_clock_init();
+int real_time_clock_init();
 
 /**
  * @brief `real_time_clock_set_datetime(t)` sets the real time clock to time `t`
@@ -50,9 +38,9 @@ Real_Time_Clock_Error_t real_time_clock_init();
  *
  * @post the real time clock is set to time `t` and immediately starts ticking forward in time.
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-Real_Time_Clock_Error_t real_time_clock_set_datetime(const tm_t *new_time);
+int real_time_clock_set_datetime(const tm_t *new_time);
 
 /**
  * @brief `real_time_clock_get_datetime(t)` stores the current real time clock time in time struct `t`.
@@ -63,9 +51,9 @@ Real_Time_Clock_Error_t real_time_clock_set_datetime(const tm_t *new_time);
  *
  * @post the current time is stored in `t`
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-Real_Time_Clock_Error_t real_time_clock_get_datetime(tm_t *out_time);
+int real_time_clock_get_datetime(tm_t *out_time);
 
 /**
  * @brief `real_time_clock_get_milliseconds(ms)` stores the current millisecond value in `ms`, this is always in [0..999].
@@ -76,9 +64,9 @@ Real_Time_Clock_Error_t real_time_clock_get_datetime(tm_t *out_time);
  *
  * @post the current millisecond value in [0..999] is stored in `out_msec`.
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-Real_Time_Clock_Error_t real_time_clock_get_milliseconds(int *out_msec);
+int real_time_clock_get_milliseconds(int *out_msec);
 
 /**
  * @brief `real_time_clock_set_alarm(t)` sets an alarm to trigger an interrupt at time `t`
@@ -89,17 +77,17 @@ Real_Time_Clock_Error_t real_time_clock_get_milliseconds(int *out_msec);
  *
  * @post an alarm is set to trigger the DS3231 interrupt at time `t`.
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  *
  * TODO: should we allow setting both alarm A and alarm B? maybe make an enum to keep track? There is also the internal
  * MAX32666 RTC alarms we could potentially use? Depends on what we need to do with it, don't overcomplicate it.
  */
-Real_Time_Clock_Error_t real_time_clock_set_alarm(const tm_t *alarm_time);
+int real_time_clock_set_alarm(const tm_t *alarm_time);
 
 /**
  * TODO: create a function to register a callback for RTC interrupts, we also need to create a funciton pointer type
  * for the callbacks, what should the signature be?
  */
-// Real_Time_Clock_Error_t real_time_clock_set_callback(rtc_callback_t callback);
+// int real_time_clock_set_callback(rtc_callback_t callback);
 
 #endif

@@ -13,23 +13,6 @@
 #ifndef GNSS_MODULE_H__
 #define GNSS_MODULE_H__
 
-/* Includes ----------------------------------------------------------------------------------------------------------*/
-
-#include "uart.h"
-
-/* Public enumerations -----------------------------------------------------------------------------------------------*/
-
-/**
- * @brief enumerated GNSS module errors are represented here.
- */
-typedef enum
-{
-    GNSS_MODULE_ERROR_ALL_OK,
-    GNSS_MODULE_UART_ERROR,
-    GNSS_MODULE_TIMEOUT_ERROR,
-    GNSS_MODULE_DATETIME_ERROR,
-} GNSS_Module_Error_t;
-
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
@@ -37,9 +20,9 @@ typedef enum
  *
  * @post the GNSS module is initialized, powered on, and ready to use.
  *
- * @retval `GNSS_MODULE_ERROR_ALL_OK` if initialization is successful, else and enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-GNSS_Module_Error_t gnss_module_init();
+int gnss_module_init();
 
 /**
  * @brief `gnss_module_deinit()` de-initializes and powers down the GNSS module. The GNSS module must then be
@@ -47,9 +30,9 @@ GNSS_Module_Error_t gnss_module_init();
  *
  * @post the GNSS module is de-initialized and powered down, and all related GPIO pin are set to high-Z.
  *
- * @retval `GNSS_MODULE_ERROR_ALL_OK` if de-initialization is successful, else and enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-GNSS_Module_Error_t gnss_module_deinit();
+int gnss_module_deinit();
 
 /**
  * @brief `gnss_module_sync_RTC_to_GNSS_time(t)` syncs the Real Time Clock module to the time reported by the GNSS
@@ -63,8 +46,8 @@ GNSS_Module_Error_t gnss_module_deinit();
  * @post the RTC module is syncronized to the current UTC time as reported by the GNSS module. Calling this function
  * will mutate the time kept by the RTC module if the sync is successful (otherwise the RTC time is left unchanged).
  *
- * @retval `GNSS_MODULE_ERROR_ALL_OK` if initialization is successful, else and enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec);
+int gnss_module_sync_RTC_to_GNSS_time(int timeout_sec);
 
 #endif

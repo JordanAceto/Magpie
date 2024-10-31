@@ -29,41 +29,43 @@ static char volume = '0';
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-SD_Card_Error_t sd_card_init()
+int sd_card_init()
 {
-    if (bsp_sdhc_init() != E_NO_ERROR)
+    int res = E_NO_ERROR;
+
+    if ((res = bsp_sdhc_init()) != E_NO_ERROR)
     {
-        return SD_CARD_INIT_ERROR;
+        return res;
     }
 
     // without a delay here the next function was consistently returning an error
     MXC_Delay(100000);
 
-    if (MXC_SDHC_Lib_InitCard(SD_CARD_INIT_NUM_RETRIES) != E_NO_ERROR)
+    if ((res = MXC_SDHC_Lib_InitCard(SD_CARD_INIT_NUM_RETRIES)) != E_NO_ERROR)
     {
-        return SD_CARD_INIT_ERROR;
+        return res;
     }
 
-    return SD_CARD_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-SD_Card_Error_t sd_card_mount()
+int sd_card_mount()
 {
     fs = &fs_obj;
 
     if (f_mount(fs, "", 1) != FR_OK)
     {
-        return SD_CARD_MOUNT_ERROR;
+        return E_COMM_ERR;
     }
 
     is_mounted = true;
-    return SD_CARD_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-SD_Card_Error_t sd_card_unmount()
+int sd_card_unmount()
 {
     is_mounted = false;
-    return f_mount(0, "", 0);
+    return f_mount(0, "", 0) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
 bool sd_card_is_mounted()
@@ -101,34 +103,34 @@ uint32_t sd_card_free_space_bytes()
     return free_sectors / 2;
 }
 
-SD_Card_Error_t sd_card_mkdir(const char *path)
+int sd_card_mkdir(const char *path)
 {
-    return f_mkdir(path) == FR_OK ? SD_CARD_ERROR_ALL_OK : SD_CARD_DIRECTORY_ERROR;
+    return f_mkdir(path) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
-SD_Card_Error_t sd_card_cd(const char *path)
+int sd_card_cd(const char *path)
 {
-    return f_chdir(path) == FR_OK ? SD_CARD_ERROR_ALL_OK : SD_CARD_DIRECTORY_ERROR;
+    return f_chdir(path) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
-SD_Card_Error_t sd_card_fopen(const char *file_name, POSIX_FileMode_t mode)
+int sd_card_fopen(const char *file_name, POSIX_FileMode_t mode)
 {
-    return f_open(&SD_file, file_name, mode) == FR_OK ? SD_CARD_ERROR_ALL_OK : SD_CARD_FILE_IO_ERROR;
+    return f_open(&SD_file, file_name, mode) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
-SD_Card_Error_t sd_card_fclose()
+int sd_card_fclose()
 {
-    return f_close(&SD_file) == FR_OK ? SD_CARD_ERROR_ALL_OK : SD_CARD_FILE_IO_ERROR;
+    return f_close(&SD_file) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
-SD_Card_Error_t sd_card_fwrite(const void *buff, uint32_t size, uint32_t *written)
+int sd_card_fwrite(const void *buff, uint32_t size, uint32_t *written)
 {
-    return f_write(&SD_file, buff, size, (UINT *)written) == FR_OK ? SD_CARD_ERROR_ALL_OK : SD_CARD_FILE_IO_ERROR;
+    return f_write(&SD_file, buff, size, (UINT *)written) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
-SD_Card_Error_t sd_card_lseek(uint32_t offset)
+int sd_card_lseek(uint32_t offset)
 {
-    return f_lseek(&SD_file, offset) == FR_OK ? SD_CARD_ERROR_ALL_OK : SD_CARD_FILE_IO_ERROR;
+    return f_lseek(&SD_file, offset) == FR_OK ? E_NO_ERROR : E_COMM_ERR;
 }
 
 uint32_t sd_card_fsize()

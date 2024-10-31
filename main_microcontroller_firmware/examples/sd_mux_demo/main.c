@@ -53,7 +53,7 @@ int main(void)
         printf("[SUCCESS]--> I2C init\n");
     }
 
-    if (sd_card_bank_ctl_init() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if (sd_card_bank_ctl_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card bank ctl init\n");
     }
@@ -83,7 +83,7 @@ int main(void)
         }
 
         // initialize and mount the card
-        if (sd_card_init() != SD_CARD_ERROR_ALL_OK)
+        if (sd_card_init() != E_NO_ERROR)
         {
             printf("[ERROR]--> Card %d init failed\n", slot);
 
@@ -96,7 +96,7 @@ int main(void)
         // without a brief delay between card init and mount, there are often mount errors
         MXC_Delay(100000);
 
-        if (sd_card_mount() != SD_CARD_ERROR_ALL_OK)
+        if (sd_card_mount() != E_NO_ERROR)
         {
             printf("[ERROR]--> Card %d mount failed\n", slot);
 
@@ -108,7 +108,7 @@ int main(void)
 
         // open a file
         sprintf(str_buff, "sd_card_%i.txt", slot);
-        if (sd_card_fopen(str_buff, POSIX_FILE_MODE_WRITE) != SD_CARD_ERROR_ALL_OK)
+        if (sd_card_fopen(str_buff, POSIX_FILE_MODE_WRITE) != E_NO_ERROR)
         {
             printf("[ERROR]--> Card %d fopen failed\n", slot);
 
@@ -121,8 +121,8 @@ int main(void)
         // write a simple message
         sprintf(str_buff, "Hello from SD card %i", slot);
         uint32_t bytes_written;
-        const SD_Card_Error_t res = sd_card_fwrite(str_buff, strlen((char *)str_buff), (void *)&bytes_written);
-        if (bytes_written != strlen(str_buff) || res != SD_CARD_ERROR_ALL_OK)
+        const int res = sd_card_fwrite(str_buff, strlen((char *)str_buff), (void *)&bytes_written);
+        if (bytes_written != strlen(str_buff) || res != E_NO_ERROR)
         {
             printf("[ERROR]--> Card %d write failed\n", slot);
 

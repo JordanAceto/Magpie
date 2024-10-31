@@ -139,8 +139,10 @@ static int ad4630_write_reg(AD4630_Register_t reg, uint8_t val);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-AD4630_Error_t ad4630_init()
+int ad4630_init()
 {
+    int res = E_NO_ERROR;
+
     // these 3 pins control the 384k ADC clock circuit
     MXC_GPIO_Config(&bsp_pins_adc_clk_en_cfg);
     MXC_GPIO_Config(&bsp_pins_adc_clk_master_reset_cfg);
@@ -162,22 +164,22 @@ AD4630_Error_t ad4630_init()
     gpio_write_pin(&bsp_pins_adc_n_reset_cfg, true);
 
     // after this call the AD4630 will output the 20MHz SPI clock on the BUSY pin
-    if (configure_adc_to_output_host_clock() != E_NO_ERROR)
+    if ((res = configure_adc_to_output_host_clock()) != E_NO_ERROR)
     {
-        return AD4630_ERROR_CONFIG_ERROR;
+        return res;
     }
 
     MXC_Delay(100000);
 
     // after this the channel 0 data SPI is ready to receive samples from the AD4630
     ad4630_cont_conversions_start();
-    if (configure_data_spi_bus_to_receive_data_from_adc() != E_NO_ERROR)
+    if ((res = configure_data_spi_bus_to_receive_data_from_adc()) != E_NO_ERROR)
     {
-        return AD4630_ERROR_CONFIG_ERROR;
+        return res;
     }
     ad4630_cont_conversions_stop();
 
-    return AD4630_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
 void ad4630_cont_conversions_start()
@@ -264,7 +266,7 @@ int configure_data_spi_bus_to_receive_data_from_adc()
     // enable the SPI port and configure the GPIO pins associated with the SPI bus responsible reading ADC channel 0
     if ((res = bsp_adc_ch0_data_spi_init()) != E_NO_ERROR)
     {
-        return AD4630_ERROR_CONFIG_ERROR;
+        return res;
     }
 
     if ((res = MXC_SPI_Init(

@@ -36,16 +36,6 @@ typedef enum
     SD_CARD_BANK_ALL_SLOTS_DISABLED,
 } SD_Card_Bank_Card_Slot_t;
 
-/**
- * @brief Enumerated SD card bank errors are represented here.
- */
-typedef enum
-{
-    SD_CARD_BANK_CTL_ERROR_ALL_OK,
-    SD_CARD_BANK_CTL_I2C_ERROR,
-    SD_CARD_BANK_CTL_INVALID_INPUT_ERROR
-} SD_Card_Bank_Ctl_Error_t;
-
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
@@ -56,11 +46,11 @@ typedef enum
  *
  * @post All input/output pins of the port expander are configured and the SD card bank is powered down.
  *
- * @return `SD_CARD_BANK_ERROR_ALL_OK` if the function succeeded, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  *
  * This must be performed before any other SD card bank functions are called.
  */
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init();
+int sd_card_bank_ctl_init();
 
 /**
  * @brief `sd_card_bank_ctl_disable_all()` deselects any active card slot and powers down the SD card bank.
@@ -69,9 +59,9 @@ SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init();
  *
  * @post all SD cards are powered down and no card slot is selected as active.
  *
- * @return `SD_CARD_BANK_ERROR_ALL_OK` if the function succeeded, else an error code.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_disable_all();
+int sd_card_bank_ctl_disable_all();
 
 /**
  * @brief `sd_card_bank_ctl_enable_slot(s)` powers on the SD card bank and selects card slot `s` as the active card.
@@ -85,9 +75,9 @@ SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_disable_all();
  * bank is disabled in the case of `SD_CARD_BANK_ALL_SLOTS_DISABLED`. If the slot given is out of range, this function
  * has no effect and simply returns `SD_CARD_BANK_INVALID_INPUT_ERROR`.
  *
- * @return `SD_CARD_BANK_ERROR_ALL_OK` if the function succeeded, else an error code.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_enable_slot(SD_Card_Bank_Card_Slot_t slot);
+int sd_card_bank_ctl_enable_slot(SD_Card_Bank_Card_Slot_t slot);
 
 /**
  * @brief `sd_card_bank_ctl_get_active_slot()` is the current enumerated active card slot.
@@ -106,10 +96,9 @@ SD_Card_Bank_Card_Slot_t sd_card_bank_ctl_get_active_slot();
  * @post the value of all SD card detect pins is cached. The status of the active SD card can be queried via the
  * `sd_card_bank_active_card_is_inserted()` boolean function.
  *
- * @return `SD_CARD_BANK_ERROR_ALL_OK` if the function succeeded, else an error code.
- *
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_read_and_cache_detect_pins();
+int sd_card_bank_ctl_read_and_cache_detect_pins();
 
 /**
  * @brief `sd_card_bank_ctl_active_card_is_inserted()` is true iff a card in the active slot is physically detected.

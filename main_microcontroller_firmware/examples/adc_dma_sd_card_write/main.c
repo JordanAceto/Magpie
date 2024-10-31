@@ -59,7 +59,7 @@ int main(void)
 
     bsp_power_on_LDOs();
 
-    if (ad4630_init() != AD4630_ERROR_ALL_OK)
+    if (ad4630_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> AD4630 init\n");
         error_handler(STATUS_LED_COLOR_BLUE);
@@ -69,7 +69,7 @@ int main(void)
         printf("[SUCCESS]--> AD4630 init\n");
     }
 
-    if (audio_dma_init() != AUDIO_DMA_ERROR_ALL_OK)
+    if (audio_dma_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> DMA init\n");
         error_handler(STATUS_LED_COLOR_BLUE);
@@ -99,7 +99,7 @@ int main(void)
         printf("[SUCCESS]--> 1V8 I2C init\n");
     }
 
-    if (afe_control_init() != AFE_CONTROL_ERROR_ALL_OK)
+    if (afe_control_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> AFE Control init\n");
         error_handler(STATUS_LED_COLOR_GREEN);
@@ -109,7 +109,7 @@ int main(void)
         printf("[SUCCESS]--> AFE Control init\n");
     }
 
-    if (afe_control_enable(AFE_CONTROL_CHANNEL_0) != AFE_CONTROL_ERROR_ALL_OK)
+    if (afe_control_enable(AFE_CONTROL_CHANNEL_0) != E_NO_ERROR)
     {
         printf("[ERROR]--> AFE Control CH0 EN\n");
         error_handler(STATUS_LED_COLOR_GREEN);
@@ -119,7 +119,7 @@ int main(void)
         printf("[SUCCESS]--> AFE Control CH0 EN\n");
     }
 
-    if (afe_control_set_gain(AFE_CONTROL_CHANNEL_0, AFE_CONTROL_GAIN_35dB) != AFE_CONTROL_ERROR_ALL_OK)
+    if (afe_control_set_gain(AFE_CONTROL_CHANNEL_0, AFE_CONTROL_GAIN_35dB) != E_NO_ERROR)
     {
         printf("[ERROR]--> AFE Control CH0 set gain\n");
         error_handler(STATUS_LED_COLOR_GREEN);
@@ -129,7 +129,7 @@ int main(void)
         printf("[SUCCESS]--> AFE Control CH0 set gain\n");
     }
 
-    if (sd_card_bank_ctl_init() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if (sd_card_bank_ctl_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card bank ctl init\n");
         error_handler(STATUS_LED_COLOR_GREEN);
@@ -153,7 +153,7 @@ int main(void)
         printf("[SUCCESS]--> SD card inserted in slot 0\n");
     }
 
-    if (sd_card_init() != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card init\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -166,7 +166,7 @@ int main(void)
     // without a brief delay between card init and mount, there are often mount errors
     MXC_Delay(100000);
 
-    if (sd_card_mount() != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_mount() != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card mount\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -192,7 +192,7 @@ int main(void)
         }
     }
 
-    if (sd_card_unmount() != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_unmount() != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card unmount\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -238,7 +238,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
     // derive the file name from the input parameters
     sprintf(file_name_buff, "demo_%dkHz_%d_bit.wav", wav_attr->sample_rate / 1000, wav_attr->bits_per_sample);
 
-    if (sd_card_fopen(file_name_buff, POSIX_FILE_MODE_WRITE) != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_fopen(file_name_buff, POSIX_FILE_MODE_WRITE) != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card fopen\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -249,7 +249,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
     }
 
     // seek past the wave header, we'll fill it in later after recording the audio, we'll know the file length then
-    if (sd_card_lseek(wav_header_get_header_length()) != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_lseek(wav_header_get_header_length()) != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card lseek past wav header\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -283,7 +283,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
 
                 if (wav_attr->bits_per_sample == WAVE_HEADER_24_BITS_PER_SAMPLE)
                 {
-                    if (sd_card_fwrite(audio_buff_0, AUDIO_DMA_BUFF_LEN_IN_BYTES, &bytes_written) != SD_CARD_ERROR_ALL_OK)
+                    if (sd_card_fwrite(audio_buff_0, AUDIO_DMA_BUFF_LEN_IN_BYTES, &bytes_written) != E_NO_ERROR)
                     {
                         printf("[ERROR]--> SD card fwrite\n");
                         error_handler(STATUS_LED_COLOR_RED);
@@ -293,7 +293,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
                 {
                     const uint32_t len = data_converters_i24_to_q15(audio_buff_0, (q15_t *)audio_buff_0, AUDIO_DMA_BUFF_LEN_IN_BYTES);
 
-                    if (sd_card_fwrite(audio_buff_0, len, &bytes_written) != SD_CARD_ERROR_ALL_OK)
+                    if (sd_card_fwrite(audio_buff_0, len, &bytes_written) != E_NO_ERROR)
                     {
                         printf("[ERROR]--> SD card fwrite\n");
                         error_handler(STATUS_LED_COLOR_RED);
@@ -321,7 +321,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
                     len_in_bytes = data_converters_q31_to_q15((q31_t *)audio_buff_1, (q15_t *)audio_buff_1, len_in_samps);
                 }
 
-                if (sd_card_fwrite(audio_buff_1, len_in_bytes, &bytes_written) != SD_CARD_ERROR_ALL_OK)
+                if (sd_card_fwrite(audio_buff_1, len_in_bytes, &bytes_written) != E_NO_ERROR)
                 {
                     error_handler(STATUS_LED_COLOR_RED);
                 }
@@ -335,7 +335,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
     audio_dma_stop();
 
     // back to the top of the file so we can write the wav header now that we can determine the size of the file
-    if (sd_card_lseek(0) != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_lseek(0) != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card lseek to top of file\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -348,7 +348,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
     wav_attr->file_length = sd_card_fsize();
     wav_header_set_attributes(wav_attr);
 
-    if (sd_card_fwrite(wav_header_get_header(), wav_header_get_header_length(), &bytes_written) != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_fwrite(wav_header_get_header(), wav_header_get_header_length(), &bytes_written) != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card WAV header fwrite\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -358,7 +358,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
         printf("[SUCCESS]--> SD card WAV header fwrite\n");
     }
 
-    if (sd_card_fclose() != SD_CARD_ERROR_ALL_OK)
+    if (sd_card_fclose() != E_NO_ERROR)
     {
         printf("[ERROR]--> SD card fclose\n");
         error_handler(STATUS_LED_COLOR_RED);

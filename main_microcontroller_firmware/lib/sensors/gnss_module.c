@@ -43,7 +43,7 @@ static bool is_ascii(int c);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-GNSS_Module_Error_t gnss_module_init()
+int gnss_module_init()
 {
     // power up the GNSS module
     MXC_GPIO_Config(&bsp_pins_gps_en_cfg);
@@ -53,27 +53,17 @@ GNSS_Module_Error_t gnss_module_init()
     MXC_GPIO_Config(&bsp_pins_gps_pps_cfg);
 
     // configure the UART pins & clock for communicating with the GNSS module
-    if (bsp_gnss_uart_init() != E_NO_ERROR)
-    {
-        return GNSS_MODULE_UART_ERROR;
-    }
-
-    return GNSS_MODULE_ERROR_ALL_OK;
+    return bsp_gnss_uart_init();
 }
 
-GNSS_Module_Error_t gnss_module_deinit()
+int gnss_module_deinit()
 {
     gpio_write_pin(&bsp_pins_gps_en_cfg, false);
 
-    if (bsp_gnss_uart_deinit() != E_NO_ERROR)
-    {
-        return GNSS_MODULE_UART_ERROR;
-    }
-
-    return GNSS_MODULE_ERROR_ALL_OK;
+    return bsp_gnss_uart_deinit();
 }
 
-GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
+int gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
 {
     // a buffer to build the NMEA strings into, chars from the GPS/UART will fill this string
     char nmea_line[MINMEA_MAX_SENTENCE_LENGTH];
@@ -164,9 +154,9 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
                         {
                             // TODO: also work out how to use the PPS signal to sync time right at a second boundary
 
-                            if (real_time_clock_set_datetime(&gps_time) == REAL_TIME_CLOCK_ERROR_ALL_OK)
+                            if (real_time_clock_set_datetime(&gps_time) == E_NO_ERROR)
                             {
-                                return GNSS_MODULE_ERROR_ALL_OK;
+                                return E_NO_ERROR;
                             }
                         }
                     }
@@ -186,7 +176,7 @@ GNSS_Module_Error_t gnss_module_sync_RTC_to_GNSS_time(int timeout_sec)
         } // switch on parser_State
     } // while !timeout
 
-    return GNSS_MODULE_TIMEOUT_ERROR;
+    return E_TIME_OUT;
 }
 
 /* Private function definitions --------------------------------------------------------------------------------------*/

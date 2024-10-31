@@ -40,7 +40,7 @@ int main(void)
 
     printf("\n*** GNSS -> RTC Clock sync example ***\n");
 
-    if (gnss_module_init() != GNSS_MODULE_ERROR_ALL_OK)
+    if (gnss_module_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> GNSS init\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -53,13 +53,14 @@ int main(void)
     if (bsp_3v3_i2c_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> I2C init\n");
+        error_handler(STATUS_LED_COLOR_RED);
     }
     else
     {
         printf("[SUCCESS]--> I2C init\n");
     }
 
-    if (real_time_clock_init() != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> RTC init\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -71,7 +72,7 @@ int main(void)
 
     // force the RTC to a default time, this way it will be obvious when we sync it back to the correct time with GPS
     tm_t t0 = time_helpers_get_default_time();
-    if (real_time_clock_set_datetime(&t0) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_set_datetime(&t0) != E_NO_ERROR)
     {
         printf("[ERROR]--> RTC set time\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -89,8 +90,8 @@ int main(void)
     while (1)
     {
         const uint32_t gps_sync_timeout_secs = 20;
-        const GNSS_Module_Error_t res = gnss_module_sync_RTC_to_GNSS_time(gps_sync_timeout_secs);
-        if (res == GNSS_MODULE_ERROR_ALL_OK)
+        const int res = gnss_module_sync_RTC_to_GNSS_time(gps_sync_timeout_secs);
+        if (res == E_NO_ERROR)
         {
             printf("[SUCCESS]--> GNSS-RTC time sync\n");
 
@@ -113,7 +114,7 @@ void print_rtc_time()
 
     tm_t t0;
 
-    if (real_time_clock_get_datetime(&t0) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_get_datetime(&t0) != E_NO_ERROR)
     {
         printf("[ERROR]--> RTC get time\n");
         error_handler(STATUS_LED_COLOR_RED);

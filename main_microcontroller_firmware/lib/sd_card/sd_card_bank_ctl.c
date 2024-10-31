@@ -128,9 +128,9 @@ static uint8_t detect_pins_bitfield;
  *
  * @post the data byte is written to the given register of the MAX7312.
  *
- * @return `SD_CARD_BANK_ERROR_OK` if the write succeeded, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static SD_Card_Bank_Ctl_Error_t max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t val);
+static int max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t val);
 
 /**
  * @brief `max7312_reg_read(r, b)` reads the 8-bit value of max7312 register `r` and stores the result in pointer `b`
@@ -143,34 +143,36 @@ static SD_Card_Bank_Ctl_Error_t max7312_reg_write(MAX7312_Register_Addr_t reg, u
  *
  * @post the 8-bit value of the register to be read will be stored in read_byte.
  *
- * @return SD_CARD_BANK_ERROR_OK if the read succeeded, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static SD_Card_Bank_Ctl_Error_t max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *read_byte);
+static int max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *read_byte);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init(mxc_i2c_regs_t *hi2c)
+int sd_card_bank_ctl_init(mxc_i2c_regs_t *hi2c)
 {
+    int res = E_NO_ERROR;
+
     // Reset all ports to zero, they initialize to 1 on power up.
-    if (sd_card_bank_ctl_disable_all() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = sd_card_bank_ctl_disable_all()) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
     // The following steps set the appropriate pins to input/output modes, only the SD detect pins are inputs.
 
     // The the mux control pins and enable pins for cards 0..3 are in port0. Clearing a bit sets the pin as an output.
     const uint8_t port_0_output_pins = (MAX7312_MUX_CTL_PINS_IN_PORT0_MASK | MAX7312_SD_EN_PINS_IN_PORT0_MASK);
-    if (max7312_reg_write(MAX7312_REG_CONFIG_0, (uint8_t)~port_0_output_pins) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = max7312_reg_write(MAX7312_REG_CONFIG_0, (uint8_t)~port_0_output_pins)) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
     // The enable pins for sd cards 4 and 5 are in port1. Clearing a bit sets the pin as an output.
     const uint8_t port_1_output_pins = MAX7312_SD_EN_PINS_IN_PORT1_MASK;
-    if (max7312_reg_write(MAX7312_REG_CONFIG_1, ~port_1_output_pins) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = max7312_reg_write(MAX7312_REG_CONFIG_1, ~port_1_output_pins)) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
     // The card detect pins have a pullup which is shorted to gnd when a card is inserted.
@@ -180,41 +182,40 @@ SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_init(mxc_i2c_regs_t *hi2c)
     return max7312_reg_write(MAX7312_REG_POLARITY_INV_1, port_1_detect_pins); // setting a bit inverts the input polarity
 }
 
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_disable_all()
+int sd_card_bank_ctl_disable_all()
 {
+    int res = E_NO_ERROR;
+
     active_card_slot = SD_CARD_BANK_ALL_SLOTS_DISABLED;
 
-    if (max7312_reg_write(MAX7312_REG_OUTPUT_PORT_0, 0x00u) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = max7312_reg_write(MAX7312_REG_OUTPUT_PORT_0, 0x00u)) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
-    if (max7312_reg_write(MAX7312_REG_OUTPUT_PORT_1, 0x00u) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
-    {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
-    }
-
-    return SD_CARD_BANK_CTL_ERROR_ALL_OK;
+    return max7312_reg_write(MAX7312_REG_OUTPUT_PORT_1, 0x00u);
 }
 
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_enable_slot(SD_Card_Bank_Card_Slot_t slot)
+int sd_card_bank_ctl_enable_slot(SD_Card_Bank_Card_Slot_t slot)
 {
+    int res = E_NO_ERROR;
+
     // early return on bad inputs
     if (slot >= SD_CARD_BANK_CTL_NUM_CARDS)
     {
-        return SD_CARD_BANK_CTL_INVALID_INPUT_ERROR;
+        return E_BAD_PARAM;
     }
 
     // turn all cards off so we don't have any overlapping cards powered on at the same time
-    if (sd_card_bank_ctl_disable_all() != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = sd_card_bank_ctl_disable_all()) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
     // return early if we want to disable all slots, there is nothing else to do
     if (slot == SD_CARD_BANK_ALL_SLOTS_DISABLED)
     {
-        return SD_CARD_BANK_CTL_ERROR_ALL_OK;
+        return E_NO_ERROR;
     }
 
     uint8_t port_0_data = 0x00u;
@@ -237,19 +238,19 @@ SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_enable_slot(SD_Card_Bank_Card_Slot_t s
     // The magic numbers here depend on how the pins are routed.
     port_0_data |= (1u | (slot << 1u));
 
-    if (max7312_reg_write(MAX7312_REG_OUTPUT_PORT_0, port_0_data) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = max7312_reg_write(MAX7312_REG_OUTPUT_PORT_0, port_0_data)) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
-    if (max7312_reg_write(MAX7312_REG_OUTPUT_PORT_1, port_1_data) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = max7312_reg_write(MAX7312_REG_OUTPUT_PORT_1, port_1_data)) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
     active_card_slot = slot;
 
-    return SD_CARD_BANK_CTL_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
 SD_Card_Bank_Card_Slot_t sd_card_bank_ctl_get_active_slot()
@@ -257,13 +258,15 @@ SD_Card_Bank_Card_Slot_t sd_card_bank_ctl_get_active_slot()
     return active_card_slot;
 }
 
-SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_read_and_cache_detect_pins()
+int sd_card_bank_ctl_read_and_cache_detect_pins()
 {
+    int res = E_NO_ERROR;
+
     uint8_t read_byte;
 
-    if (max7312_reg_read(MAX7312_REG_INPUT_PORT_1, &read_byte) != SD_CARD_BANK_CTL_ERROR_ALL_OK)
+    if ((res = max7312_reg_read(MAX7312_REG_INPUT_PORT_1, &read_byte)) != E_NO_ERROR)
     {
-        return SD_CARD_BANK_CTL_I2C_ERROR;
+        return res;
     }
 
     // The detect pins are in bits 2..7 of port 1, so we shift the bitfield representing the card detect pins
@@ -272,7 +275,7 @@ SD_Card_Bank_Ctl_Error_t sd_card_bank_ctl_read_and_cache_detect_pins()
     // The magic numbers here depend on how the pins are routed.
     detect_pins_bitfield = read_byte >> 2u;
 
-    return SD_CARD_BANK_CTL_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
 bool sd_card_bank_ctl_active_card_is_inserted()
@@ -289,12 +292,12 @@ bool sd_card_bank_ctl_active_card_is_inserted()
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
 
-SD_Card_Bank_Ctl_Error_t max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t val)
+int max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t val)
 {
     // don't try to write to registers that are forbidden or invalid to write to
     if (!((MAX7312_REG_OUTPUT_PORT_0 <= reg) && (reg <= MAX7312_REG_TIMEOUT)))
     {
-        return SD_CARD_BANK_CTL_INVALID_INPUT_ERROR;
+        return E_BAD_PARAM;
     }
 
     const uint16_t num_bytes_to_write = 2u;
@@ -311,12 +314,11 @@ SD_Card_Bank_Ctl_Error_t max7312_reg_write(MAX7312_Register_Addr_t reg, uint8_t 
         .restart = 0,
         .callback = NULL,
     };
-    const int res = MXC_I2C_MasterTransaction(&req);
 
-    return res == 0 ? SD_CARD_BANK_CTL_ERROR_ALL_OK : SD_CARD_BANK_CTL_I2C_ERROR;
+    return MXC_I2C_MasterTransaction(&req);
 }
 
-SD_Card_Bank_Ctl_Error_t max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *read_byte)
+int max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *read_byte)
 {
     const uint16_t num_bytes_to_write = 1u;
     const uint16_t num_bytes_to_read = 1u;
@@ -336,5 +338,5 @@ SD_Card_Bank_Ctl_Error_t max7312_reg_read(MAX7312_Register_Addr_t reg, uint8_t *
 
     *read_byte = max_7312_i2c_buff[0u];
 
-    return res == 0 ? SD_CARD_BANK_CTL_ERROR_ALL_OK : SD_CARD_BANK_CTL_I2C_ERROR;
+    return res;
 }

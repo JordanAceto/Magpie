@@ -47,16 +47,6 @@ typedef enum
     AFE_CONTROL_GAIN_UNDEFINED,
 } AFE_Control_Gain_t;
 
-/**
- * @brief control errors are represented here.
- */
-typedef enum
-{
-    AFE_CONTROL_ERROR_ALL_OK = 0,
-    AFE_CONTROL_ERROR_I2C_ERROR,
-    AFE_CONTROL_ERROR_CHANNEL_NOT_ENABLED_ERROR,
-} AFE_Control_Error_t;
-
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
@@ -67,9 +57,9 @@ typedef enum
  *
  * @post the AFE gain control is initialized and ready to use.
  *
- * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-AFE_Control_Error_t afe_control_init();
+int afe_control_init();
 
 /**
  * @brief `afe_control_enable(c)` enables AFE channel `c`, powering it on.
@@ -80,8 +70,10 @@ AFE_Control_Error_t afe_control_init();
  * @param channel the enumerated AFE channel to enable.
  *
  * @post the given channel is powered on.
+ *
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel);
+int afe_control_enable(AFE_Control_Channel_t channel);
 
 /**
  * @brief `afe_control_disable(c)` disables AFE channel `c`, powering it off.
@@ -92,8 +84,10 @@ AFE_Control_Error_t afe_control_enable(AFE_Control_Channel_t channel);
  * @param channel the enumerated AFE channel to disable.
  *
  * @post the given channel is powered off.
+ *
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-AFE_Control_Error_t afe_control_disable(AFE_Control_Channel_t channel);
+int afe_control_disable(AFE_Control_Channel_t channel);
 
 /**
  * @brief `afe_control_channel_is_enabled(c)` is true iff AFE channel `c` is enabled.
@@ -119,9 +113,9 @@ bool afe_control_channel_is_enabled(AFE_Control_Channel_t channel);
  *
  * @post The gain of AFE channel `c` is changed to enumerated gain setting `g`.
  *
- * @return error code: `AFE_GAIN_CTL_ERR_ALL_OK` if all I2C transactions were successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-AFE_Control_Error_t afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Control_Gain_t gain);
+int afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Control_Gain_t gain);
 
 /**
  * @brief `afe_gain_ctl_get_gain(c)` is the current AFE gain setting of AFE channel `c`.

@@ -8,17 +8,6 @@
 #ifndef AD4630_H_
 #define AD4630_H_
 
-/* Public enumerations -----------------------------------------------------------------------------------------------*/
-
-/**
- * @brief AD4630 errors are represented here
- */
-typedef enum
-{
-    AD4630_ERROR_ALL_OK,
-    AD4630_ERROR_CONFIG_ERROR,
-} AD4630_Error_t;
-
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /***
@@ -28,9 +17,9 @@ typedef enum
  *
  * @post the ADC is initialized and ready to use
  *
- * @retval `AD4630_ERROR_ALL_OK` if the operation succeeded, else an error code
+ * @retval `E_NO_ERROR` if successful, else a negative error code.
  */
-AD4630_Error_t ad4630_init();
+int ad4630_init();
 
 /**
  * `ad4630_cont_conversions_start()` enables the ADC conversion clock and starts the ADC continuous conversions

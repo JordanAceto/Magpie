@@ -65,14 +65,14 @@ int main(void)
     if (bsp_3v3_i2c_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> I2C init\n");
+        error_handler(STATUS_LED_COLOR_BLUE);
     }
     else
     {
         printf("[SUCCESS]--> I2C init\n");
-        error_handler(STATUS_LED_COLOR_BLUE);
     }
 
-    if (real_time_clock_init() != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_init() != E_NO_ERROR)
     {
         printf("[ERROR]--> RTC init\n");
         error_handler(STATUS_LED_COLOR_RED);
@@ -139,7 +139,7 @@ int cli_show_rtc(int argc, char *argv[])
 
     tm_t t0;
 
-    if (real_time_clock_get_datetime(&t0) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if (real_time_clock_get_datetime(&t0) != E_NO_ERROR)
     {
         return -1;
     }

@@ -98,9 +98,9 @@ typedef enum
  *
  * @post `num_bytes_to_read` bytes of data are stored in `read_buff`.
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *read_buff, uint32_t num_bytes_to_read);
+static int ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *read_buff, uint32_t num_bytes_to_read);
 
 /**
  * @brief `ds3231_write(b, n)` writes `n` bytes of data from `b` to the DS3231 starting at the register address in `b[0]`.
@@ -115,13 +115,13 @@ static Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint
  *
  * @post `num_bytes_to_write` bytes of data written from `write_buff` to the DS3231
  *
- * @retval `REAL_TIME_CLOCK_ERROR_ALL_OK` if successful, else an enumerated error.
+ * @retval `E_NO_ERROR` if successful, else a negative error code
  */
-static Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes_to_write);
+static int ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes_to_write);
 
 /* Public function definitions ---------------------------------------------------------------------------------------*/
 
-Real_Time_Clock_Error_t real_time_clock_init()
+int real_time_clock_init()
 {
     MXC_GPIO_Config(&bsp_pins_rtc_int_cfg);
 
@@ -131,15 +131,15 @@ Real_Time_Clock_Error_t real_time_clock_init()
         DS3231_STATUS_REGISTER_FLAG_EN32kHz, // enable 32kHz clock out
     };
 
-    const Real_Time_Clock_Error_t res = ds3231_i2c_write(write_buff, 3);
-
     // TODO: init the MAX32666 RTC here as well
 
-    return res;
+    return ds3231_i2c_write(write_buff, 3);
 }
 
-Real_Time_Clock_Error_t real_time_clock_set_datetime(const tm_t *new_time)
+int real_time_clock_set_datetime(const tm_t *new_time)
 {
+    int res = E_NO_ERROR;
+
     uint8_t write_buff[4];
 
     // do the seconds, minutes, and hours
@@ -147,9 +147,9 @@ Real_Time_Clock_Error_t real_time_clock_set_datetime(const tm_t *new_time)
     write_buff[1] = time_helpers_decimal_0_99_to_bcd8(new_time->tm_sec);
     write_buff[2] = time_helpers_decimal_0_99_to_bcd8(new_time->tm_min);
     write_buff[3] = time_helpers_decimal_0_99_to_bcd8(new_time->tm_hour);
-    if (ds3231_i2c_write(write_buff, 4) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if ((res = ds3231_i2c_write(write_buff, 4)) != E_NO_ERROR)
     {
-        return REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+        return res;
     }
 
     // skip over the weekdays at DS3231 register address 0x03, we don't care about this
@@ -174,22 +174,23 @@ Real_Time_Clock_Error_t real_time_clock_set_datetime(const tm_t *new_time)
         write_buff[3] = time_helpers_decimal_0_99_to_bcd8(orig_year);
     }
 
-    if (ds3231_i2c_write(write_buff, 4) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if ((res = ds3231_i2c_write(write_buff, 4)) != E_NO_ERROR)
     {
-        return REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+        return res;
     }
 
-    return REAL_TIME_CLOCK_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-Real_Time_Clock_Error_t real_time_clock_get_datetime(tm_t *out_time)
+int real_time_clock_get_datetime(tm_t *out_time)
 {
     const size_t num_bytes_to_read = 7; // seconds, minutes, hours, day (not used), date, month, year
     uint8_t read_buff[num_bytes_to_read];
 
-    if (ds3231_i2c_read(DS3231_REGISTER_SECONDS, read_buff, num_bytes_to_read) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    int res = E_NO_ERROR;
+    if ((res = ds3231_i2c_read(DS3231_REGISTER_SECONDS, read_buff, num_bytes_to_read)) != E_NO_ERROR)
     {
-        return REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+        return res;
     }
 
     out_time->tm_sec = time_helpers_bcd8_byte_to_decimal(read_buff[0]);
@@ -208,17 +209,19 @@ Real_Time_Clock_Error_t real_time_clock_get_datetime(tm_t *out_time)
 
     out_time->tm_year += 100; // tm is years since 1900, DS3231 since 2000
 
-    return REAL_TIME_CLOCK_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
-Real_Time_Clock_Error_t real_time_clock_get_milliseconds(int *out_msec)
+int real_time_clock_get_milliseconds(int *out_msec)
 {
     // TODO need to interact with MAX32666 RTC here
-    return REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+    return E_NOT_SUPPORTED;
 }
 
-Real_Time_Clock_Error_t real_time_clock_set_alarm(const tm_t *alarm_time)
+int real_time_clock_set_alarm(const tm_t *alarm_time)
 {
+    int res = E_NO_ERROR;
+
     uint8_t write_buff[5];
 
     // with this scheme A1M1..A1M4 bits are all guaranteed to be zero, 12/~24 is set to 24 hour time, and DY/~DT bit is 0
@@ -228,25 +231,25 @@ Real_Time_Clock_Error_t real_time_clock_set_alarm(const tm_t *alarm_time)
     write_buff[2] = time_helpers_decimal_0_99_to_bcd8(alarm_time->tm_min) & 0x7Fu;
     write_buff[3] = time_helpers_decimal_0_99_to_bcd8(alarm_time->tm_hour) & 0x3Fu;
     write_buff[4] = time_helpers_decimal_0_99_to_bcd8(alarm_time->tm_mday) & 0x3Fu;
-    if (ds3231_i2c_write(write_buff, 5) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if ((res = ds3231_i2c_write(write_buff, 5)) != E_NO_ERROR)
     {
-        return REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+        return res;
     }
 
     // now enable the interrupt
     write_buff[0] = DS3231_REGISTER_CONTROL;
     write_buff[1] = DS3231_CONTROL_REGISTER_FLAG_INTCN | DS3231_CONTROL_REGISTER_FLAG_A1IE;
-    if (ds3231_i2c_write(write_buff, 2) != REAL_TIME_CLOCK_ERROR_ALL_OK)
+    if ((res = ds3231_i2c_write(write_buff, 2)) != E_NO_ERROR)
     {
-        return REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+        return res;
     }
 
-    return REAL_TIME_CLOCK_ERROR_ALL_OK;
+    return E_NO_ERROR;
 }
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
 
-Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *read_buff, uint32_t num_bytes_to_read)
+int ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *read_buff, uint32_t num_bytes_to_read)
 {
     // we need to first send the starting address we want to read from
     read_buff[0] = start_reg;
@@ -262,12 +265,10 @@ Real_Time_Clock_Error_t ds3231_i2c_read(DS3231_Register_t start_reg, uint8_t *re
         .callback = NULL,
     };
 
-    const int res = MXC_I2C_MasterTransaction(&req);
-
-    return res == 0 ? REAL_TIME_CLOCK_ERROR_ALL_OK : REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+    return MXC_I2C_MasterTransaction(&req);
 }
 
-Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes_to_write)
+int ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes_to_write)
 {
     mxc_i2c_req_t req = {
         .i2c = bsp_pins_3v3_i2c_handle,
@@ -280,7 +281,5 @@ Real_Time_Clock_Error_t ds3231_i2c_write(uint8_t *write_buff, uint32_t num_bytes
         .callback = NULL,
     };
 
-    const int res = MXC_I2C_MasterTransaction(&req);
-
-    return res == 0 ? REAL_TIME_CLOCK_ERROR_ALL_OK : REAL_TIME_CLOCK_ERROR_I2C_ERROR;
+    return MXC_I2C_MasterTransaction(&req);
 }
