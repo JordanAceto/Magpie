@@ -39,6 +39,36 @@ static bool channel_1_is_enabled = false;
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
 /**
+ * @brief `afe_control_gain_enum_to_bit_pos(ge)` is the bit position for a MAX14662 analog switch which results in
+ * the given gain in dB.
+ *
+ * The bit positions are a function of the analog switches chosen and the PCB layout. The bit position represents a
+ * single analog switch in the closed position in a MAX14662 analog switch. Refer to the schematic for clarification.
+ *
+ * This and `afe_control_bit_pos_to_gain_enum(bp)` are inverse functions.
+ *
+ * @param gain_enum the enumerated gain to convert to a bit-position.
+ *
+ * @retval the bit position for the analog switches U4 & U6 that results in the given gain.
+ */
+uint8_t afe_control_gain_enum_to_bit_pos(AFE_Control_Gain_t gain_enum);
+
+/**
+ * @brief `afe_control_bit_pos_to_gain_enum(bp)` is the AFE_Control_Gain_t enumeration resulting from the analog switch
+ * bit position `bp`.
+ *
+ * The bit positions are a function of the analog switches chosen and the PCB layout. The bit position represents a
+ * single analog switch in the closed position in a MAX14662 analog switch. Refer to the schematic for clarification.
+ *
+ * This and `afe_control_gain_enum_to_bit_pos(ge)` are inverse functions.
+ *
+ * @param bit_pos the bit position to convert to a gain enumeration
+ *
+ * @retval the gain enumeration which maps to the bit position `bit_pos`.
+ */
+AFE_Control_Gain_t afe_control_bit_pos_to_gain_enum(uint8_t bit_pos);
+
+/**
  * @brief Configures the TPS22994 to control the AFE channels over I2C.
  *
  * @pre the I2C bus on the 3.3V domain is configured as an I2C master and has pullup resistors to 3.3V.
@@ -158,7 +188,7 @@ int afe_control_set_gain(AFE_Control_Channel_t channel, AFE_Control_Gain_t gain)
 
     // the format for writing is [addr, dummy, data]
     tx_buff[0] = MAX14662_DUMMY_REGISTER;
-    tx_buff[1] = gain;
+    tx_buff[1] = afe_control_gain_enum_to_bit_pos(gain);
 
     const uint8_t address = channel == AFE_CONTROL_CHANNEL_0 ? MAX14662_CH0_7_BIT_I2C_ADDRESS : MAX14662_CH1_7_BIT_I2C_ADDRESS;
 
@@ -201,25 +231,65 @@ AFE_Control_Gain_t afe_control_get_gain(AFE_Control_Channel_t channel)
         return AFE_CONTROL_GAIN_UNDEFINED;
     }
 
-    const AFE_Control_Gain_t gain = rx_buff[0];
+    const uint8_t bit_pos = rx_buff[0];
 
-    switch (gain)
+    return afe_control_bit_pos_to_gain_enum(bit_pos);
+}
+
+/* Private function definitions --------------------------------------------------------------------------------------*/
+
+uint8_t afe_control_gain_enum_to_bit_pos(AFE_Control_Gain_t gain_enum)
+{
+    // refer to the schematic to understand the bit positions, these are based on the PCB layout
+    switch (gain_enum)
     {
     case AFE_CONTROL_GAIN_5dB:
+        return (1u << 7u);
     case AFE_CONTROL_GAIN_10dB:
+        return (1u << 6u);
     case AFE_CONTROL_GAIN_15dB:
+        return (1u << 5u);
     case AFE_CONTROL_GAIN_20dB:
+        return (1u << 4u);
     case AFE_CONTROL_GAIN_25dB:
+        return (1u << 3u);
     case AFE_CONTROL_GAIN_30dB:
+        return (1u << 2u);
     case AFE_CONTROL_GAIN_35dB:
+        return (1u << 1u);
     case AFE_CONTROL_GAIN_40dB:
-        return gain;
+        return (1u << 0u);
+    case AFE_CONTROL_GAIN_UNDEFINED: // fall through for undefined case or any other invalid value
+    default:
+        return 0;
+    }
+}
+
+AFE_Control_Gain_t afe_control_bit_pos_to_gain_enum(uint8_t bit_pos)
+{
+    // refer to the schematic to understand the bit positions, these are based on the PCB layout
+    switch (bit_pos)
+    {
+    case (1u << 7u):
+        return AFE_CONTROL_GAIN_5dB;
+    case (1u << 6u):
+        return AFE_CONTROL_GAIN_10dB;
+    case (1u << 5u):
+        return AFE_CONTROL_GAIN_15dB;
+    case (1u << 4u):
+        return AFE_CONTROL_GAIN_20dB;
+    case (1u << 3u):
+        return AFE_CONTROL_GAIN_25dB;
+    case (1u << 2u):
+        return AFE_CONTROL_GAIN_30dB;
+    case (1u << 1u):
+        return AFE_CONTROL_GAIN_35dB;
+    case (1u << 0u):
+        return AFE_CONTROL_GAIN_40dB;
     default:
         return AFE_CONTROL_GAIN_UNDEFINED;
     }
 }
-
-/* Private function definitions --------------------------------------------------------------------------------------*/
 
 int tps22994_configure_ch0_and_ch1_for_i2c_control()
 {

@@ -30,21 +30,19 @@ typedef enum
 } AFE_Control_Channel_t;
 
 /**
- * @brief  gain settings are represented here.
- *
- * The values are based on the PCB routing, and should not be changed unless there is a new PCB revision.
+ * @brief  Enumerated AFE gain settings are represented here.
  */
 typedef enum
 {
-    AFE_CONTROL_GAIN_5dB = (1u << 7u),
-    AFE_CONTROL_GAIN_10dB = (1u << 6u),
-    AFE_CONTROL_GAIN_15dB = (1u << 5u),
-    AFE_CONTROL_GAIN_20dB = (1u << 4u),
-    AFE_CONTROL_GAIN_25dB = (1u << 3u),
-    AFE_CONTROL_GAIN_30dB = (1u << 2u),
-    AFE_CONTROL_GAIN_35dB = (1u << 1u),
-    AFE_CONTROL_GAIN_40dB = (1u << 0u),
-    AFE_CONTROL_GAIN_UNDEFINED,
+    AFE_CONTROL_GAIN_5dB = 5,
+    AFE_CONTROL_GAIN_10dB = 10,
+    AFE_CONTROL_GAIN_15dB = 15,
+    AFE_CONTROL_GAIN_20dB = 20,
+    AFE_CONTROL_GAIN_25dB = 25,
+    AFE_CONTROL_GAIN_30dB = 30,
+    AFE_CONTROL_GAIN_35dB = 35,
+    AFE_CONTROL_GAIN_40dB = 40,
+    AFE_CONTROL_GAIN_UNDEFINED = 255, // sentinal value for undefined or invalid gain settings
 } AFE_Control_Gain_t;
 
 /* Public function declarations --------------------------------------------------------------------------------------*/
