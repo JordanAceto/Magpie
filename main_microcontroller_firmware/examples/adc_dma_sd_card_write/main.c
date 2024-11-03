@@ -119,14 +119,25 @@ int main(void)
         printf("[SUCCESS]--> AFE Control CH0 EN\n");
     }
 
-    if (afe_control_set_gain(AFE_CONTROL_CHANNEL_0, AFE_CONTROL_GAIN_35dB) != E_NO_ERROR)
+    if (afe_control_set_gain(AFE_CONTROL_CHANNEL_0, DEMO_CONFIG_AUDIO_GAIN) != E_NO_ERROR)
     {
-        printf("[ERROR]--> AFE Control CH0 set gain\n");
+        printf("[ERROR]--> AFE Control CH0 gain set to %ddB\n", DEMO_CONFIG_AUDIO_GAIN);
         error_handler(STATUS_LED_COLOR_GREEN);
     }
     else
     {
-        printf("[SUCCESS]--> AFE Control CH0 set gain\n");
+        printf("[SUCCESS]--> AFE Control CH0 gain set to %ddB\n", DEMO_CONFIG_AUDIO_GAIN);
+    }
+
+    const AFE_Control_Gain_t readback_gain = afe_control_get_gain(AFE_CONTROL_CHANNEL_0);
+    if (readback_gain != DEMO_CONFIG_AUDIO_GAIN)
+    {
+        printf("[ERROR]--> AFE set (%ddB) and get (%ddB) gain don't match\n", DEMO_CONFIG_AUDIO_GAIN, readback_gain);
+        error_handler(STATUS_LED_COLOR_GREEN);
+    }
+    else
+    {
+        printf("[SUCCESS]--> AFE get-gain matches AFE set-gain\n");
     }
 
     if (sd_card_bank_ctl_init() != E_NO_ERROR)
@@ -139,18 +150,18 @@ int main(void)
         printf("[SUCCESS]--> SD card bank ctl init\n");
     }
 
-    sd_card_bank_ctl_enable_slot(0);
+    sd_card_bank_ctl_enable_slot(DEMO_CONFIG_SD_CARD_SLOT_TO_USE);
 
     sd_card_bank_ctl_read_and_cache_detect_pins();
 
     if (!sd_card_bank_ctl_active_card_is_inserted())
     {
-        printf("[ERROR]--> Card at slot 0 not inserted\n");
+        printf("[ERROR]--> Card at slot %d not inserted\n", DEMO_CONFIG_SD_CARD_SLOT_TO_USE);
         error_handler(STATUS_LED_COLOR_RED);
     }
     else
     {
-        printf("[SUCCESS]--> SD card inserted in slot 0\n");
+        printf("[SUCCESS]--> SD card inserted in slot %d\n", DEMO_CONFIG_SD_CARD_SLOT_TO_USE);
     }
 
     if (sd_card_init() != E_NO_ERROR)

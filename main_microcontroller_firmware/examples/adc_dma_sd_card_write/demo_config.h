@@ -8,6 +8,8 @@
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
+#include "afe_control.h"
+#include "sd_card_bank_ctl.h"
 #include "wav_header.h"
 
 /* Public defines ----------------------------------------------------------------------------------------------------*/
@@ -34,5 +36,9 @@ const Wave_Header_Bits_Per_Sample_t demo_bit_depths_to_test[] = {
 };
 
 const uint32_t DEMO_CONFIG_NUM_BIT_DEPTHS_TO_TEST = sizeof(demo_bit_depths_to_test) / sizeof(demo_bit_depths_to_test[0]);
+
+#define DEMO_CONFIG_AUDIO_GAIN (AFE_CONTROL_GAIN_35dB)
+
+#define DEMO_CONFIG_SD_CARD_SLOT_TO_USE (SD_CARD_BANK_CARD_SLOT_0)
 
 #endif /* DEMO_CONFIG_H_ */
