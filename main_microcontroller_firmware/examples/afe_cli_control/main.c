@@ -194,15 +194,25 @@ int cli_afe_gain(int argc, char *argv[])
 
     if (result == E_NO_ERROR)
     {
-        printf("[SUCCESS]--> AFE ch %d set gain to %d\n", channel, gain);
+        printf("[SUCCESS]--> AFE ch %d set gain to %ddB\n", channel, gain);
     }
     else if (result == E_UNINITIALIZED)
     {
-        printf("[ERROR]--> AFE ch %d must be enabled\n", channel);
+        printf("[ERROR]--> AFE ch %d must be enabled before setting the gain\n", channel);
     }
     else
     {
-        printf("[ERROR]--> AFE ch %d set gain to %d\n", channel, gain);
+        printf("[ERROR]--> AFE ch %d set gain to %ddB\n", channel, gain);
+    }
+
+    const AFE_Control_Gain_t readback_gain = afe_control_get_gain(channel);
+    if (readback_gain != gain)
+    {
+        printf("[ERROR]--> AFE set (%ddB) and get (%ddB) gain don't match\n", gain, readback_gain);
+    }
+    else
+    {
+        printf("[SUCCESS]--> AFE get-gain matches AFE set-gain\n");
     }
 
     return 0;
