@@ -42,8 +42,8 @@ int audio_dma_init();
 /**
  * @brief `audio_dma_start()` starts the audio DMA stream
  *
- * @pre DMA initialization is complete, the ADC is initialized and continuously converting, and the LDOs are powered on
- * via bsp_power_on_LDOs().
+ * @pre The LDOs are powered on via bsp_power_on_LDOs(), the ADC is initialized, the 384kHz conversion clock and chip
+ * select lines are enabled, and DMA initialization is complete,
  *
  * @post the DMA stream is started and the internal buffers are continuously filled with audio data.
  *

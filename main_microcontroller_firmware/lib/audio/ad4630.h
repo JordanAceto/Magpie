@@ -22,21 +22,26 @@
 int ad4630_init();
 
 /**
- * `ad4630_cont_conversions_start()` enables the ADC conversion clock and starts the ADC continuous conversions
+ * `ad4630_384kHz_fs_clk_and_cs_start()` enables the 384kHz ADC conversion clock and chip select signal. The chip select
+ * signal from U2 is set as an output which echos the 384kHz conversion clock to be used as a chip select for the SPI
+ * busses which read data from the ADC.
  *
  * @pre ADC initialization is complete, the LDOs are powered on via bsp_power_on_LDOs().
  *
- * @post the ADC conversion clock is enabled and the ADC continuously converts samples at the rate of the ADC conversion clock
+ * @post the ADC conversion clock is enabled and the ADC continuously converts samples at 384k samples per second. The
+ * chip selct line from the ADC clocking circuit is configured as an output.
  */
-void ad4630_cont_conversions_start();
+void ad4630_384kHz_fs_clk_and_cs_start();
 
 /**
- * `ad4630_cont_conversions_stop()` disables the ADC conversion clock and stops the ADC continuous conversions
+ * `ad4630_384kHz_fs_clk_and_cs_stop()` disables the 384kHz ADC conversion clock and chip select signal, the chip select
+ * line from U2 is set to high-Z.
  *
  * @pre ADC initialization is complete, the LDOs are powered on via bsp_power_on_LDOs().
  *
- * @post the ADC conversion clock is disabled and conversions stop
+ * @post the ADC conversion clock is disabled and conversions stop, the chip select signal from the ADC clocking circuit
+ * is left in a high-Z state.
  */
-void ad4630_cont_conversions_stop();
+void ad4630_384kHz_fs_clk_and_cs_stop();
 
 #endif /* AD4630_H_ */

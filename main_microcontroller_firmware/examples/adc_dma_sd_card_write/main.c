@@ -261,7 +261,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
 
     decimation_filter_set_sample_rate(wav_attr->sample_rate);
 
-    ad4630_cont_conversions_start();
+    ad4630_384kHz_fs_clk_and_cs_start();
     audio_dma_start();
 
     status_led_set(STATUS_LED_COLOR_GREEN, true); // green led on while recording
@@ -331,7 +331,7 @@ void write_demo_wav_file(Wave_Header_Attributes_t *wav_attr, uint32_t file_len_s
         }
     }
 
-    ad4630_cont_conversions_stop();
+    ad4630_384kHz_fs_clk_and_cs_stop();
     audio_dma_stop();
 
     // back to the top of the file so we can write the wav header now that we can determine the size of the file

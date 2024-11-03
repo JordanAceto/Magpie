@@ -149,7 +149,7 @@ int ad4630_init()
     MXC_GPIO_Config(&bsp_pins_adc_cs_disable_cfg);
 
     // start with the 384k clock disabled and U2 output set to high-z
-    ad4630_cont_conversions_stop();
+    ad4630_384kHz_fs_clk_and_cs_stop();
 
     // must be high for ADC to run
     MXC_GPIO_Config(&bsp_pins_adc_n_reset_cfg);
@@ -172,24 +172,24 @@ int ad4630_init()
     MXC_Delay(100000);
 
     // after this the channel 0 data SPI is ready to receive samples from the AD4630
-    ad4630_cont_conversions_start();
+    ad4630_384kHz_fs_clk_and_cs_start();
     if ((res = configure_data_spi_bus_to_receive_data_from_adc()) != E_NO_ERROR)
     {
         return res;
     }
-    ad4630_cont_conversions_stop();
+    ad4630_384kHz_fs_clk_and_cs_stop();
 
     return E_NO_ERROR;
 }
 
-void ad4630_cont_conversions_start()
+void ad4630_384kHz_fs_clk_and_cs_start()
 {
     gpio_write_pin(&bsp_pins_adc_clk_master_reset_cfg, false);
     gpio_write_pin(&bsp_pins_adc_cs_disable_cfg, false);
     gpio_write_pin(&bsp_pins_adc_clk_en_cfg, true);
 }
 
-void ad4630_cont_conversions_stop()
+void ad4630_384kHz_fs_clk_and_cs_stop()
 {
     gpio_write_pin(&bsp_pins_adc_clk_en_cfg, false);
     gpio_write_pin(&bsp_pins_adc_cs_disable_cfg, true);
