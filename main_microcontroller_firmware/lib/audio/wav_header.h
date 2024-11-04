@@ -105,13 +105,15 @@ void wav_header_set_attributes(Wave_Header_Attributes_t *attributes);
  *
  * @pre `wav_header_set_attributes(a)` has been called with a valid set of attributes in `a`.
  *
- * @return pointer to the array of bytes that comprise the wave header with all attributes set. The length of the
+ * @retval pointer to the array of bytes that comprise the wave header with all attributes set. The length of the
  * header is given by `wav_header_get_header_length()`
  */
 char *wav_header_get_header();
 
 /**
  * @brief `wav_header_get_header_length()` is the length in bytes of the wave header. This does not change dynamically.
+ *
+ * @retval the length of the WAV header in bytes.
  */
 uint32_t wav_header_get_header_length();
 

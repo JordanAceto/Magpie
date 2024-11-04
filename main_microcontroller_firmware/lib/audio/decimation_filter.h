@@ -17,7 +17,7 @@
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * `decimation_filter_set_sample_rate(sr)` sets the sample rate for the decimation filter to `sr`. This must not be
+ * @brief `decimation_filter_set_sample_rate(sr)` sets the sample rate for the decimation filter to `sr`. This must not be
  * called in the middle of writing a WAV file. Only call this between SD card file writes when you want to change
  * sample rates.
  *

@@ -29,7 +29,7 @@
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
 /**
- * `data_converters_i24_swap_endianness(s, d, l)` stores 24 bit samples in `s` into `d` with the ms and ls bytes swapped
+ * @brief `data_converters_i24_swap_endianness(s, d, l)` stores 24 bit samples in `s` into `d` with the ms and ls bytes swapped
  *
  * @param src the buffer of packed 24 bit samples to swap endianness of, must be at least `l` bytes long
  *

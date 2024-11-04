@@ -10,7 +10,7 @@
 
 /* Public function declarations --------------------------------------------------------------------------------------*/
 
-/***
+/**
  * @brief `ad4630_init()` initializes the AD4630 ADC
  *
  * @pre the LDOs are powered on via bsp_power_on_LDOs().
@@ -22,7 +22,7 @@
 int ad4630_init();
 
 /**
- * `ad4630_384kHz_fs_clk_and_cs_start()` enables the 384kHz ADC conversion clock and chip select signal. The chip select
+ * @brief `ad4630_384kHz_fs_clk_and_cs_start()` enables the 384kHz ADC conversion clock and chip select signal. The chip select
  * signal from U2 is set as an output which echos the 384kHz conversion clock to be used as a chip select for the SPI
  * busses which read data from the ADC.
  *
@@ -34,7 +34,7 @@ int ad4630_init();
 void ad4630_384kHz_fs_clk_and_cs_start();
 
 /**
- * `ad4630_384kHz_fs_clk_and_cs_stop()` disables the 384kHz ADC conversion clock and chip select signal, the chip select
+ * @brief `ad4630_384kHz_fs_clk_and_cs_stop()` disables the 384kHz ADC conversion clock and chip select signal, the chip select
  * line from U2 is set to high-Z.
  *
  * @pre ADC initialization is complete, the LDOs are powered on via bsp_power_on_LDOs().

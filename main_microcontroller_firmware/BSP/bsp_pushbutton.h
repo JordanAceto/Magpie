@@ -39,11 +39,15 @@ void pushbuttons_init();
 
 /**
  * @brief `user_pushbutton_state()` is the enumerated state of the user pushbutton.
+ *
+ * @retval the enumerated state of the pushbutton.
  */
 Button_State_t user_pushbutton_state();
 
 /**
  * @brief `ble_enable_pushbutton_state()` is the enumerated state of the BLE enable pushbutton.
+ *
+ * @retval the enumerated state of the pushbutton.
  */
 Button_State_t ble_enable_pushbutton_state();
 

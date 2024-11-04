@@ -96,7 +96,7 @@ uint32_t sd_card_free_space_bytes();
 int sd_card_mkdir(const char *path);
 
 /**
- * `sd_card_cd(p)` changes the directory of the currently mounted SD card to path `p`.
+ * @brief `sd_card_cd(p)` changes the directory of the currently mounted SD card to path `p`.
  *
  * @param path the path to change directory into.
  *
