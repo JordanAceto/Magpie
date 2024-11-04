@@ -27,7 +27,7 @@
 | P0.15 | Open Drain | AF1 | I2C1_SDA | 3.3V domain I2C bus data | 3.3V |  bsp_i2c, afe_control, gnss_module, real_time_clock, sd_card_bank_ctl |
 | P0.16 | I/O | AF2 | QSPI1_SSO | AD4630 ADC chip select (shorted to P0.4, P1.8) | 1.8V | ad4630, audio_dma |
 | P0.17 | Input | AF2 | QSPI1_SDIO0 | AD4630 ADC channel 0 data (shorted to P0.26) | 1.8V | ad4630, audio_dma |
-| P0.18 | - |  |  |  |  |
+| P0.18 | - |  |  |  |  |  |
 | P0.19 | Input | AF2 | QSPI1_SCK | AD4630 ADC clock (shorted to P1.11) | 1.8V | ad4630, audio_dma |
 | P0.20 | Outut | GPIO |  | ADC clock enable | 1.8V | ad4630 |
 | P0.21 | Output | GPIO | | ADC reset | 1.8V | ad4630 |
@@ -51,7 +51,7 @@
 | P1.7 | Input | AF1 | SDHC_CDN | SD card card detect (unused) | 3.3V | - |
 | P1.8 | I/O | AF1 | QSPI0_SSO | AD4630 ADC chip select (shorted to P0.4, P0.16) | 1.8V | ad4630, audio_dma |
 | P1.9 | Input | AF1 | QSPI0_SDIO0 | AD4630 ADC channel 1 data | 1.8V | ad4630, audio_dma |
-| P1.10 | - |  |  |  |  |
+| P1.10 | - |  |  |  |  |  |
 | P1.11 | Input | AF1 | QSPI0_SCK | AD4630 ADC clock (shorted to P0.19) | 1.8V | ad4630, audio_dma |
 | P1.12 | Input | AF3 | UART1_RX | Console UART, RX from point of view of MAX326676 | 1.8V | bsp_uart, board |
 | P1.13 | Output | AF3 | UART1_TX | Console UART, TX from point of view of MAX326676 | 1.8V | bsp_uart, board |
