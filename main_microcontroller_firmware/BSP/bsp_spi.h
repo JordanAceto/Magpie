@@ -1,5 +1,5 @@
 /**
- * @file      bsp_sdpi.h
+ * @file      bsp_spi.h
  * @brief     This module is responsible for initializing and de-initializing the SPI busses used by the sytem.
  *
  * This module requires:

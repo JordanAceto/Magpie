@@ -1,5 +1,5 @@
 /**
- * @file      sd_card_bank.h
+ * @file      sd_card_bank_ctl.h
  * @brief     A software interface for controlling the SD card bank is represented here.
  * @details   This module is responsible for selecting the active SD card, turning the SD cards on and off, and
  * querying whether an SD card is inserted or not. This module is NOT responsible for actually reading/writing to

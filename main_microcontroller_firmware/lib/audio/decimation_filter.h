@@ -1,5 +1,5 @@
 /**
- * @file      decimation_filters.h
+ * @file      decimation_filter.h
  * @brief     A software interface for decimation filters is represented here.
  * @details   This module is used to down-sample the raw 384kHz 24-bit audio data from the ADC/DMA modules to other
  *            sample rates.

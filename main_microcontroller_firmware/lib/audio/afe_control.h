@@ -1,5 +1,5 @@
 /**
- * @file      afe_gain_ctl.h
+ * @file      afe_control.h
  * @brief     A software module for controlling the Analog Front End (AFE) is represented here.
  * @details   The gain is set by switching resistors in a differential opamp circuit. Eight discrete gain settings are
  * available. AFE channels are enabled and disabled via load switches controlled by GPIO pins and an I2C controlled
