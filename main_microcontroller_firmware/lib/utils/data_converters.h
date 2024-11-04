@@ -44,12 +44,13 @@
  * The below diagram shows four 24 bit samples packed into three 32 bit words. This is the smallest valid chunk size.
  * Before swapping the samples have their ms bytes first, then mid byte, then ls byte. After swapping the order from
  * right to left is ms byte, mid byte, ls byte.
- *
+ * ```
  *  09 0A 0B 06, 07 08 03 04, 05 00 01 02  <- src buffer pre swapping, big endian, one chunk shown
  * |--------|---------|---------|--------| <- demarcation of the four 24 bit input samples
  *
  *  0B 0A 09 08, 07 06 05 04, 03 02 01 00  <- dest buffer post swapping, little endian, one chunk shown
  * |--------|---------|---------|--------| <- demarcation of the four 24 bit output samples
+ * ```
  */
 void data_converters_i24_swap_endianness(const uint8_t *src, uint8_t *dest, uint32_t src_len_in_bytes);
 
@@ -71,12 +72,13 @@ void data_converters_i24_swap_endianness(const uint8_t *src, uint8_t *dest, uint
  * Example:
  * The below diagram shows four 24 bit input samples expanded into four 32 bit samples. The least significant bytes
  * of each sample are zero'd out in the output buffer.
- *
+ * ```
  *               0B 0A 09 08, 07 06 05 04, 03 02 01 00  <- src buffer, one chunk shown
  *              |--------|---------|---------|--------| <- demarcation of the four 24 bit input samples
  *
  *  09 0A 0B 00, 06 07 08 00, 03 04 05 00, 00 01 20 00  <- dest buffer, one chunk shown, note the endianness swap
  * |------------|------------|------------|-----------| <- demarcation of the four 32 bit samples with the ls bytes zero'd
+ * ```
  */
 uint32_t data_converters_i24_to_q31_with_endian_swap(const uint8_t *src, q31_t *dest, uint32_t src_len_in_bytes);
 
@@ -98,12 +100,13 @@ uint32_t data_converters_i24_to_q31_with_endian_swap(const uint8_t *src, q31_t *
  * Example:
  * The below diagram shows four 24 bit input samples expanded into four 32 bit samples. The least significant bytes
  * of each sample are zero'd out in the output buffer.
- *
+ * ```
  *  0B 0A 09 08, 07 06 05 04, 03 02 01 00  <- src buffer, one chunk shown
  * |--------|---------|---------|--------| <- demarcation of the four 24 bit input samples
  *
  *               0B 0A 08 07, 05 04 02 01  <- dest buffer, one chunk shown
  *              |-----|------|-----|-----| <- demarcation of the four 16 bit samples with the ls bytes truncated
+ * ```
  */
 uint32_t data_converters_i24_to_q15(const uint8_t *src, q15_t *dest, uint32_t src_len_in_bytes);
 
@@ -128,12 +131,13 @@ uint32_t data_converters_i24_to_q15(const uint8_t *src, q15_t *dest, uint32_t sr
  * are only to help keep track of the various bytes. We start with 4 32 bit samples taking up 4 words, and finish
  * with 4 24 bit samples taking up 3 words. For each 32 bit input sample, we truncate the least significant byte
  * and shuffle the rest of the bytes to take up the least possible space.
- *
+ * ```
  *  0F 0E 0D 0C, 0B 0A 09 08, 07 06 05 04, 03 02 01 00  <- src buffer, one chunk shown
  * |------------|------------|------------|-----------| <- demarcation of the four 32 bit input samples
  *
  *               0F 0E 0D 0B, 0A 09 07 06, 05 03 02 01  <- dest buffer, one chunk shown
  *              |--------|---------|---------|--------| <- demarcation of the four 24 bit truncated samples, split across the 32 bit words
+ * ```
  */
 uint32_t data_converters_q31_to_i24(const q31_t *src, uint8_t *dest, uint32_t src_len_in_samps);
 
@@ -157,12 +161,13 @@ uint32_t data_converters_q31_to_i24(const q31_t *src, uint8_t *dest, uint32_t sr
  * are only to help keep track of the various bytes. We start with 4 32 bit samples taking up 4 words, and finish
  * with 4 24 bit samples taking up 3 words. For each 32 bit input sample, we truncate the least significant byte
  * and shuffle the rest of the bytes to take up the least possible space.
- *
+ * ```
  *  0F 0E 0D 0C, 0B 0A 09 08, 07 06 05 04, 03 02 01 00  <- src buffer, one chunk shown
  * |------------|------------|------------|-----------| <- demarcation of the four 32 bit input samples
  *
  *                            0F 0E 0B 0A, 07 06 03 02  <- dest buffer, one chunk shown
  *                           |-----|------|-----|-----| <- demarcation of the four 16 bit truncated samples, split across the 32 bit words
+ * ```
  */
 uint32_t data_converters_q31_to_q15(const q31_t *src, q15_t *dest, uint32_t src_len_in_samps);
 
@@ -182,7 +187,7 @@ uint32_t data_converters_q31_to_q15(const q31_t *src, q15_t *dest, uint32_t src_
  * Example:
  * The below diagram shows 4 32-bit samples from each source interleaved into 8 16-bit samples in the destination.
  * Only the most significant 16 bits of each source sample are used.
- *
+ * ```
  *  11 22 33 44, 55 66 77 88, 99 AA BB CC, DD EE FF 00  <- 4 q31_t samples from src0
  *  FF EE DD CC, BB AA 99 88, 77 66 55 44, 33 22 11 00  <- 4 q31_t samples from src1
  * |------------|------------|------------|-----------| <- demarcation of the 32 bit input samples
@@ -190,6 +195,7 @@ uint32_t data_converters_q31_to_q15(const q31_t *src, q15_t *dest, uint32_t src_
  *  11 22, FF EE, 55 66, BB AA, 99 AA, 77 66, DD EE, 33 22  <- 8 truncated and interleaved q15_t samples in dest
  * |------|------|------|------|------|------|------|-----| <- demarcation of the eight 16 bit output samples
  *  src0   src1   src0   src1   src0   src1   src0   src1
+ * ```
  */
 uint32_t data_converters_interleave_2_q31_to_q15(const q31_t *src0, const q31_t *src1, q15_t *dest, uint32_t src_len_in_samps);
 
@@ -209,7 +215,7 @@ uint32_t data_converters_interleave_2_q31_to_q15(const q31_t *src0, const q31_t 
  * Example:
  * The below diagram shows 2 32-bit samples from each source interleaved into 4 24-bit samples in the destination.
  * Only the most significant 24 bits of each source sample are used.
- *
+ * ```
  *  11 22 33 44, 55 66 77 88  <- 2 q31_t samples from src0
  *  AA BB CC DD, EE FF 00 11  <- 2 q31_t samples from src1
  * |------------|-----------| <- demarcation of the 32 bit input samples
@@ -217,6 +223,7 @@ uint32_t data_converters_interleave_2_q31_to_q15(const q31_t *src0, const q31_t 
  *  11 22, 33 AA, BB CC, 55 66, 77 EE, FF 00  <- 4 truncated and interleaved i24 samples in dest
  * |---------|----------|---------|---------| <- demarcation of the four 24 bit output samples split across 6 bytes
  *    src0       src1       src0      src1
+ * ```
  */
 uint32_t data_converters_interleave_2_q31_to_i24(const q31_t *src0, const q31_t *src1, uint8_t *dest, uint32_t src_len_in_samps);
 
